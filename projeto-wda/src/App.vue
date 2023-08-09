@@ -5,7 +5,7 @@
       <Sidebar />
     </v-navigation-drawer>
 
-    <v-app-bar app>
+    <v-app-bar class="elevation-3" app>
 
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
       <v-row justify="space-between">

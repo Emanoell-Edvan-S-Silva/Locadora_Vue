@@ -1,60 +1,58 @@
 <template>
-  <v-app>
-    <v-card class="pa-3 ma-5">
-      <template>
-        <v-data-table :headers="headers" :items="editor" sort-by="nome" class="elevation-1" :items-per-page="5">
-          <template v-slot:top>
-            <v-toolbar flat>
-              <v-toolbar-title class="text-h4">Editora</v-toolbar-title>
-              <v-divider class="mx-4" inset vertical></v-divider>
+  <v-app id="background">
+    <template>
+      <v-data-table :headers="headers" :items="editor" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id">
+        <template v-slot:top>
+          <v-toolbar flat>
+            <v-toolbar-title class="text-h4">Editora</v-toolbar-title>
+            <v-divider class="mx-4" inset vertical></v-divider>
 
-              <v-dialog v-model="dialog" max-width="500px">
-                <template v-slot:activator="{ on, attrs }">
-                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Nova Editora </v-btn>
-                </template>
+            <v-dialog v-model="dialog" max-width="500px">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Nova Editora </v-btn>
+              </template>
 
-                <v-card>
-                  <v-card-title>
-                    <span class="text-h5">{{ formTitle }}</span>
-                  </v-card-title>
+              <v-card>
+                <v-card-title>
+                  <span class="text-h5">{{ formTitle }}</span>
+                </v-card-title>
 
-                  <v-card-text>
-                    <v-container>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-text-field :rules="rules" v-model="editedItem.nome" label="Nome"></v-text-field>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-text-field :rules="rules" v-model="editedItem.cidade" label="Cidade"></v-text-field>
-                        </v-col>
-                      </v-row>
-                    </v-container>
-                  </v-card-text>
+                <v-card-text>
+                  <v-container>
+                    <v-form ref="form" v-model="valid" lazy-validation>
+                      <v-col  cols="12">
+                        <v-text-field append-icon="mdi-domain" v-model="editedItem.nome" :rules="nameRules" label="Nome Editora" required></v-text-field>
+                      </v-col>
+                      <v-col  cols="12">
+                        <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
+                      </v-col>
+                    </v-form>
+                  </v-container>
+                </v-card-text>
 
-                  <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                    <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-dialog>
-            </v-toolbar>
-          </template>
-          <template slot="item.acoes" slot-scope="{ item }">
-            <v-icon class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-            <v-icon @click="ConfirmDeletar(item)">mdi-delete</v-icon>
-          </template>
-          <template v-slot:no-data>
-            <div class="text-center">
-              Carregando...
-              <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-            </div>
-          </template>
-        </v-data-table>
-      </template>
-    </v-card>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
+                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Save </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+            <v-spacer></v-spacer>
+            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+          </v-toolbar>
+        </template>
+        <template slot="item.acoes" slot-scope="{ item }">
+          <v-icon class="blue--text mr-2" @click="editItem(item)">mdi-pencil</v-icon>
+          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+        </template>
+        <template v-slot:no-data>
+          <div class="text-center">
+            Carregando...
+            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
+          </div>
+        </template>
+      </v-data-table>
+    </template>
   </v-app>
 </template>
 
@@ -62,17 +60,30 @@
 import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
 import Editors from "../services/editor_service";
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-right",
+  iconColor: "white",
+  customClass: {
+    popup: "colored-toast",
+  },
+  showConfirmButton: false,
+  timer: 1500,
+  timerProgressBar: true,
+});
 
 export default {
-  name: "BookView",
+  name: "EditorView",
 
   data: () => ({
+    valid: false,
+    search: "",
     dialog: false,
 
     headers: [
-      { text: "Nome", value: "nome" , align: 'center'},
-      { text: "Cidade", value: "cidade", align: 'center' },
-      { text: "Ações", value: "acoes", sortable: false, align: 'center'},
+      { text: "Nome", value: "nome", align: "center" },
+      { text: "Cidade", value: "cidade", align: "center" },
+      { text: "Ações", value: "acoes", sortable: false, align: "center" },
     ],
     editor: [],
     delete: {},
@@ -89,78 +100,78 @@ export default {
       nome: "",
     },
 
-    rules: [(value) => !!value || "Required.",
-    (value) => (value && value.length >= 3) || "Minimo 3 caracteres"],
-
+    nameRules: [(v) => !!v || "Nome é obrigatório"],
+    cityRules: [(v) => !!v || "Cidade é obrigatório"],
   }),
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item"
+      return this.editedIndex === -1 ? "Nova Editora" : "Editar Editora";
     },
   },
   watch: {
     dialog(val) {
-      val || this.close()
+      val || this.close();
     },
   },
   mounted() {
     this.geteditors();
-    console.log(this.editor)
+    console.log(this.editor);
   },
 
   methods: {
     geteditors() {
       Editors.getlisteditors().then((result) => {
-        console.log(result.data)
-        this.editor = result.data
+        console.log(result.data);
+        this.editor = result.data;
       });
     },
 
     deleteItem(item) {
-      console.log(item)
-      Editors.deleteeditor(item)
-      this.geteditors()
+      console.log(item);
+      Editors.deleteeditor(item).then(() => {
+        this.geteditors();
+      });
     },
 
     editItem(item) {
-      this.editedIndex = !this.editedIndex
-      this.dialog = true
+      this.editedIndex = !this.editedIndex;
+      this.dialog = true;
       Editors.getuniqueeditor(item.id).then((result) => {
-        this.editedItem = result.data
+        this.editedItem = result.data;
       });
     },
 
     save() {
-      if (this.editedIndex > 0) {
-        Object.assign(this.books[this.editedIndex], this.editedItem)
-        console.log(this.formTitle)
-      } else {
-        if (this.editedItem.id != 0) {
-          console.log(this.editItem)
+      if (this.$refs.form.validate() === true) {
+        if (this.editedIndex == -1) {
+          console.log(this.editItem);
           Editors.puteditorupdate(this.editedItem)
             .then(() => {
-              this.AlertEdit()
-              this.close()
-              this.geteditors()
+              this.AlertEdit();
+              this.close();
+              this.geteditors();
             })
             .catch((error) => {
-              this.AlertError(error.detail)
-            })
+              this.AlertError(error.detail);
+            });
         } else {
-          if (this.editedItem.nome.length < 3 || this.editedItem.cidade.length < 3) {
-            Swal.fire("", "Insira uma quantidades caracteres validos", "error");
-          } else {
-            Editors.postaddeditor(this.editedItem).then(() => {
-              this.AlertAdd()
-              this.close()
-              this.geteditors()
+          Editors.postaddeditor(this.editedItem)
+            .then(() => {
+              this.AlertAdd();
+              this.close();
+              this.geteditors();
             })
             .catch((error) => {
-              this.AlertError(error)
-            })
-          }
+              this.AlertError(error);
+            });
         }
+      } else {
+        Toast.fire({
+          icon: "error",
+          title: "Erro",
+          text: "não foi possivel adicionar editora pois existe campos nulos",
+        });
       }
     },
 
@@ -189,8 +200,8 @@ export default {
       Swal.fire("Sucesso", "A editora foi Adicionada com sucesso", "success");
     },
 
-    AlertError(error){
-      Swal.fire("Ocorreu um erro", error.detail, "error");
+    AlertError(error) {
+      Swal.fire("Ocorreu um erro", error, "error");
     },
 
     close() {
@@ -208,5 +219,36 @@ export default {
 .swal2-popup {
   font-size: 1rem !important;
   font-family: sans-serif;
+}
+.colored-toast.swal2-icon-success {
+  background-color: #a5dc86 !important;
+}
+
+.colored-toast.swal2-icon-error {
+  background-color: #f27474 !important;
+}
+
+.colored-toast.swal2-icon-warning {
+  background-color: #f8bb86 !important;
+}
+
+.colored-toast.swal2-icon-info {
+  background-color: #3fc3ee !important;
+}
+
+.colored-toast.swal2-icon-question {
+  background-color: #87adbd !important;
+}
+
+.colored-toast .swal2-title {
+  color: white;
+}
+
+.colored-toast .swal2-close {
+  color: white;
+}
+
+.colored-toast .swal2-html-container {
+  color: white;
 }
 </style>

@@ -1,73 +1,73 @@
 <template>
-  <v-app>
-    <v-card class="pa-3 ma-5">
-      <template>
-        <v-data-table :headers="headers" :items="books" :search="search" class="elevation-1">
-          <template v-slot:top>
-            <v-toolbar flat>
-              <v-toolbar-title class="text-h4">Livros</v-toolbar-title>
-              <v-divider class="mx-4" inset vertical></v-divider>
+  <v-app id="background">
+    <template>
+      <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
+        <template v-slot:top>
+          <v-toolbar flat>
+            <v-toolbar-title class="text-h4">Livros</v-toolbar-title>
+            <v-divider class="mx-4" inset vertical></v-divider>
 
-              <v-dialog v-model="dialog" max-width="500px">
-                <template v-slot:activator="{ on, attrs }">
-                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Livro </v-btn>
-                </template>
+            <v-dialog v-model="dialog" max-width="500px">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Livro </v-btn>
+              </template>
 
-                <v-card>
-                  <v-card-title>
-                    <span class="text-h5">{{ formTitle }}</span>
-                  </v-card-title>
+              <v-card>
+                <v-card-title>
+                  <span class="text-h5">{{ formTitle }}</span>
+                </v-card-title>
 
-                  <v-card-text>
-                    <v-container>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-text-field :rules="rules" v-model="editedItem.nome" label="Nome Livro"></v-text-field>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col cols="12" sm="6">
-                          <v-text-field :rules="rules" v-model="editedItem.autor" label="Autor"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-select :items="editor" item-text="nome" item-value="id" v-model="editedItem.editora.id" label="Editora"></v-select>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col cols="12" sm="6">
-                          <v-text-field v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-text-field v-model="editedItem.quantidade" label="Estoque"></v-text-field>
-                        </v-col>
-                      </v-row>
-                    </v-container>
-                  </v-card-text>
+                <v-card-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="12">
+                        <v-text-field :rules="rules" v-model="editedItem.nome" label="Nome Livro"></v-text-field>
+                      </v-col>
+                    </v-row>
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <v-text-field :rules="rules" v-model="editedItem.autor" label="Autor"></v-text-field>
+                      </v-col>
+                      <v-col>
+                      <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[() => !!editora || 'Campo obrigatório']" :items="editor" label="Editoras" placeholder="Select..." required></v-autocomplete>
+                    </v-col>
+                    </v-row>
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <v-text-field v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6">
+                        <v-text-field v-model="editedItem.quantidade" label="Estoque"></v-text-field>
+                      </v-col>
+                    </v-row>
+                    
+                  </v-container>
+                </v-card-text>
 
-                  <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                    <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-                  </v-card-actions>
-                </v-card>
-              </v-dialog>
-              <v-spacer></v-spacer>
-              <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-            </v-toolbar>
-          </template>
-          <template slot="item.acoes" slot-scope="{ item }">
-            <v-icon class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-            <v-icon @click="ConfirmDeletar(item)">mdi-delete</v-icon>
-          </template>
-          <template v-slot:no-data>
-            <div class="text-center">
-              Carregando...
-              <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-            </div>
-          </template>
-        </v-data-table>
-      </template>
-    </v-card>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
+                  <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                </v-card-actions>
+
+              </v-card>
+            </v-dialog>
+            <v-spacer></v-spacer>
+            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+          </v-toolbar>
+        </template>
+        <template slot="item.acoes" slot-scope="{ item }">
+          <v-icon class="blue--text mr-2" @click="editItem(item)">mdi-pencil</v-icon>
+          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+        </template>
+        <template v-slot:no-data>
+          <div class="text-center">
+            Carregando...
+            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
+          </div>
+        </template>
+      </v-data-table>
+    </template>
   </v-app>
 </template>
 
@@ -81,9 +81,8 @@ export default {
   name: "BookView",
 
   data: () => ({
-    search: '',
+    search: "",
     dialog: false,
-    dialogDelete: false,
     headers: [
       { text: "ID", value: "id", align: "start", sortable: false },
       { text: "Nome", value: "nome" },
@@ -243,3 +242,13 @@ export default {
   },
 };
 </script>
+
+<style>
+.swal2-popup {
+  font-size: 1rem !important;
+  font-family: sans-serif;
+}
+#background {
+  background: #fafafa;
+}
+</style>

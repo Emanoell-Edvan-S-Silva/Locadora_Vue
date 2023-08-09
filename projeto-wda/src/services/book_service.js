@@ -12,7 +12,7 @@ export default{
     putbookupdate: (book) => {
         console.log(book) 
         return httpURL.put('livro', book)
-    },
+    },                                                                                  
     postaddbook: (book) => {
         console.log(book)
         return httpURL.post('livro', book)
