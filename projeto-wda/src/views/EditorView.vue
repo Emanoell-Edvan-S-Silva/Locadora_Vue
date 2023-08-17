@@ -20,10 +20,10 @@
                 <v-card-text>
                   <v-container>
                     <v-form ref="form" v-model="valid" lazy-validation>
-                      <v-col  cols="12">
+                      <v-col cols="12">
                         <v-text-field append-icon="mdi-domain" v-model="editedItem.nome" :rules="nameRules" label="Nome Editora" required></v-text-field>
                       </v-col>
-                      <v-col  cols="12">
+                      <v-col cols="12">
                         <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
                       </v-col>
                     </v-form>
@@ -32,8 +32,8 @@
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Save </v-btn>
+                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -42,8 +42,18 @@
           </v-toolbar>
         </template>
         <template slot="item.acoes" slot-scope="{ item }">
-          <v-icon class="blue--text mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon  class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
+            </template>
+            <span>Editar</span>
+          </v-tooltip>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon  class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
+            </template>
+            <span>Excluir</span>
+          </v-tooltip>
         </template>
         <template v-slot:no-data>
           <div class="text-center">
@@ -60,6 +70,7 @@
 import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
 import Editors from "../services/editor_service";
+
 const Toast = Swal.mixin({
   toast: true,
   position: "bottom-right",
@@ -193,11 +204,19 @@ export default {
     },
 
     AlertEdit() {
-      Swal.fire("Sucesso", "A editora foi editada com sucesso", "success");
+      Toast.fire({
+          icon: "success",
+          title: "Editora editada!",
+          text: "Editora foi editada com sucesso!",
+        });
     },
 
     AlertAdd() {
-      Swal.fire("Sucesso", "A editora foi Adicionada com sucesso", "success");
+      Toast.fire({
+          icon: "success",
+          title: "Sucesso!",
+          text: "Editora foi Adicionada com sucesso!",
+        });
     },
 
     AlertError(error) {
@@ -221,11 +240,11 @@ export default {
   font-family: sans-serif;
 }
 .colored-toast.swal2-icon-success {
-  background-color: #a5dc86 !important;
+  background-color: #689F38 !important;
 }
 
 .colored-toast.swal2-icon-error {
-  background-color: #f27474 !important;
+  background-color: #E53935 !important;
 }
 
 .colored-toast.swal2-icon-warning {

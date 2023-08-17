@@ -19,33 +19,27 @@
 
                 <v-card-text>
                   <v-container>
-                    <v-row>
+                    <v-form ref="form" v-model="valid" lazy-validation>
                       <v-col cols="12">
-                        <v-text-field :rules="rules" v-model="editedItem.nome" label="Nome"></v-text-field>
+                        <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome" required></v-text-field>
                       </v-col>
-                    </v-row>
-                    <v-row>
                       <v-col cols="12">
-                        <v-text-field :rules="rules" v-model="editedItem.email" label="E-mail"></v-text-field>
+                        <v-text-field append-icon="mdi-email-edit" v-model="editedItem.email" :rules="emailRules" label="E-mail" required></v-text-field>
                       </v-col>
-                    </v-row>
-                    <v-row>
                       <v-col cols="12">
-                        <v-text-field :rules="rules" v-model="editedItem.cidade" label="Cidade"></v-text-field>
+                        <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
                       </v-col>
-                    </v-row>
-                    <v-row>
                       <v-col cols="12">
-                        <v-text-field :rules="rules" v-model="editedItem.endereco" label="Endereço"></v-text-field>
+                        <v-text-field append-icon="mdi-map-marker" v-model="editedItem.endereco" :rules="addressRules" label="Endereço" required></v-text-field>
                       </v-col>
-                    </v-row>
+                    </v-form>
                   </v-container>
                 </v-card-text>
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                  <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -54,8 +48,18 @@
           </v-toolbar>
         </template>
         <template slot="item.acoes" slot-scope="{ item }">
-          <v-icon class="blue--text mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
+            </template>
+            <span>Editar</span>
+          </v-tooltip>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
+            </template>
+            <span>Excluir</span>
+          </v-tooltip>
         </template>
         <template v-slot:no-data>
           <div class="text-center">
@@ -73,15 +77,28 @@ import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
 import User from "../services/user_service";
 
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-right",
+  iconColor: "white",
+  customClass: {
+    popup: "colored-toast",
+  },
+  showConfirmButton: false,
+  timer: 1500,
+  timerProgressBar: true,
+});
+
 export default {
   name: "UserView",
 
   data: () => ({
+    valid: false,
     search: "",
     dialog: false,
 
     headers: [
-      { text: "ID", value: "id", align: "start" },
+      { text: "ID", value: "id", align: "start", sortable: false},
       { text: "Nome", value: "nome" },
       { text: "E-mail", value: "email" },
       { text: "Cidade", value: "cidade" },
@@ -106,12 +123,15 @@ export default {
       nome: "",
     },
 
-    rules: [(value) => !!value || "Required.", (value) => (value && value.length >= 3) || "Minimo 3 caracteres"],
+    nameRules: [(v) => !!v || "Nome é obrigatório"],
+    emailRules: [(v) => !!v || "E-mail é obrigatório", (v) => /.+@.+\..+/.test(v) || "E-mail must be valid"],
+    cityRules: [(v) => !!v || "Cidade é obrigatório"],
+    addressRules: [(v) => !!v || "Endereço é obrigatório"],
   }),
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
+      return this.editedIndex === -1 ? "Novo Usuário" : "Editar Usuário";
     },
   },
   watch: {
@@ -148,11 +168,18 @@ export default {
     },
 
     save() {
-      if (this.editedIndex > 0) {
-        Object.assign(this.books[this.editedIndex], this.editedItem);
-        console.log(this.formTitle);
-      } else {
-        if (this.editedItem.id != 0) {
+      if (this.$refs.form.validate() === true) {
+        if (this.editedItem.id == -1) {
+          User.postAddUser(this.editedItem)
+            .then(() => {
+              this.AlertAdd();
+              this.close();
+              this.getUsers();
+            })
+            .catch((error) => {
+              this.AlertError(error);
+            });
+        } else {
           console.log(this.editItem);
           User.putUserUpdate(this.editedItem)
             .then(() => {
@@ -163,21 +190,13 @@ export default {
             .catch((error) => {
               this.AlertError(error.detail);
             });
-        } else {
-          if (this.editedItem.nome.length < 3 || this.editedItem.cidade.length < 3) {
-            Swal.fire("", "Insira uma quantidades caracteres validos", "error");
-          } else {
-            User.postAddUser(this.editedItem)
-              .then(() => {
-                this.AlertAdd();
-                this.close();
-                this.getUsers();
-              })
-              .catch((error) => {
-                this.AlertError(error);
-              });
-          }
         }
+      } else {
+        Toast.fire({
+          icon: "error",
+          title: "Erro",
+          text: "não foi possivel adicionar Usuários pois existe campos nulos",
+        });
       }
     },
 
@@ -199,11 +218,19 @@ export default {
     },
 
     AlertEdit() {
-      Swal.fire("Sucesso", "O usuário foi editado com sucesso", "success");
+      Toast.fire({
+        icon: "success",
+        title: "Usuário editado!",
+        text: "Usuário foi editado com sucesso!",
+      });
     },
 
     AlertAdd() {
-      Swal.fire("Sucesso", "O usuário foi adicionado com sucesso", "success");
+      Toast.fire({
+        icon: "success",
+        title: "Sucesso!",
+        text: "Usuário foi Adicionado com sucesso!",
+      });
     },
 
     AlertError(error) {
@@ -226,7 +253,35 @@ export default {
   font-size: 1rem !important;
   font-family: sans-serif;
 }
-#background {
-  background: #fafafa;
+.colored-toast.swal2-icon-success {
+  background-color: #689f38 !important;
+}
+
+.colored-toast.swal2-icon-error {
+  background-color: #e53935 !important;
+}
+
+.colored-toast.swal2-icon-warning {
+  background-color: #f8bb86 !important;
+}
+
+.colored-toast.swal2-icon-info {
+  background-color: #3fc3ee !important;
+}
+
+.colored-toast.swal2-icon-question {
+  background-color: #87adbd !important;
+}
+
+.colored-toast .swal2-title {
+  color: white;
+}
+
+.colored-toast .swal2-close {
+  color: white;
+}
+
+.colored-toast .swal2-html-container {
+  color: white;
 }
 </style>

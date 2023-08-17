@@ -19,40 +19,42 @@
 
                 <v-card-text>
                   <v-container>
-                    <v-row>
-                      <v-col cols="12">
-                        <v-select :items="users" item-text="nome" item-value="id" v-model="editedItem.usuario_id.id" label="Usuário"></v-select>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col cols="12">
-                        <v-select :items="availableBooks" item-text="nome" item-value="id" v-model="editedItem.livro_id.id" label="livros"></v-select>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editedItem.data_aluguel" label="Data de Aluguel" readonly></v-text-field>
-                      </v-col>
-                      <v-col>
-                        <v-dialog ref="dialog" v-model="modal" :return-value.sync="editedItem.data_previsao" persistent width="290px">
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-text-field v-model="editedItem.data_previsao" label="Data de previsão" readonly v-bind="attrs" v-on="on"></v-text-field>
-                          </template>
-                          <v-date-picker v-model="editedItem.data_previsao" scrollable :min="minDate" :max="maxDate">
-                            <v-spacer></v-spacer>
-                            <v-btn text color="primary" @click="modal = false"> Cancel </v-btn>
-                            <v-btn text color="primary" @click="$refs.dialog.save(editedItem.data_previsao, editedItem.data_devolucao)"> OK </v-btn>
-                          </v-date-picker>
-                        </v-dialog>
-                      </v-col>
-                    </v-row>
+                    <v-form ref="form" v-model="valid" lazy-validation>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.usuario_id.id" :rules="[(v) => !!v || 'Usuário é obrigatório']" :items="users" label="Usuário" placeholder="Selecionar..." required></v-autocomplete>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.livro_id.id" :rules="[(v) => !!v || 'Livro é obrigatório']" :items="availableBooks" label="Livro" placeholder="Selecionar..." required></v-autocomplete>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="6">
+                          <v-text-field v-model="editedItem.data_aluguel" label="Data de Aluguel" readonly></v-text-field>
+                        </v-col>
+                        <v-col>
+                          <v-dialog ref="dialog" v-model="modal" :return-value.sync="editedItem.data_previsao" persistent width="290px">
+                            <template v-slot:activator="{ on, attrs }">
+                              <v-text-field :rules="[(v) => !!v || 'Data é obrigatório']" v-model="editedItem.data_previsao" label="Data de previsão" readonly v-bind="attrs" v-on="on"></v-text-field>
+                            </template>
+                            <v-date-picker v-model="editedItem.data_previsao" scrollable :min="minDate" :max="maxDate">
+                              <v-spacer></v-spacer>
+                              <v-btn text color="primary" @click="modal = false"> Cancel </v-btn>
+                              <v-btn text color="primary" @click="$refs.dialog.save(editedItem.data_previsao, editedItem.data_devolucao)"> OK </v-btn>
+                            </v-date-picker>
+                          </v-dialog>
+                        </v-col>
+                      </v-row>
+                    </v-form>
                   </v-container>
                 </v-card-text>
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                  <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -61,17 +63,38 @@
           </v-toolbar>
         </template>
         <template slot="item.acoes" slot-scope="{ item }">
-          <v-icon class="green--text mr-2" @click="ConfirmDelivery(item)">mdi-book-check</v-icon>
-          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+          <v-tooltip bottom v-if="!item.data_devolucao">
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="green--text mr-2 custom-icon" @click="ConfirmDelivery(item)" v-bind="attrs" v-on="on">mdi-book-check</v-icon>
+            </template>
+            <span>Devolver</span>
+          </v-tooltip>
+          <v-tooltip bottom v-if="!item.data_devolucao">
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
+            </template>
+            <span>Excluir</span>
+          </v-tooltip>
         </template>
         <template slot="item.status" slot-scope="{ item }">
+          <v-chip style="background-color: transparent;">
           <span class="pa-1 pl-3 pr-3" :style="getStatusStyle(item.data_previsao, item.data_devolucao)">{{ getStatusLabel(item.data_previsao, item.data_devolucao) }}</span>
+        </v-chip>
         </template>
         <template v-slot:no-data>
           <div class="text-center">
             Carregando...
             <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
           </div>
+        </template>
+        <template slot="item.data_aluguel" slot-scope="{ item }">
+          {{ item.data_aluguel | formatDate }}
+        </template>
+        <template slot="item.data_previsao" slot-scope="{ item }">
+          {{ item.data_previsao | formatDate }}
+        </template>
+        <template slot="item.data_devolucao" slot-scope="{ item }">
+          {{ item.data_devolucao | formatDate }}
         </template>
       </v-data-table>
     </template>
@@ -83,11 +106,23 @@ import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
 import Rent from "../services/rent_service";
 
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-right",
+  iconColor: "white",
+  customClass: {
+    popup: "colored-toast",
+  },
+  showConfirmButton: false,
+  timer: 1500,
+  timerProgressBar: true,
+});
+
 export default {
   name: "RentView",
 
   data: () => ({
-
+    valid: true,
     minDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().substr(0, 10),
     maxDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
     search: "",
@@ -100,7 +135,7 @@ export default {
       { text: "Data de Aluguel", value: "data_aluguel" },
       { text: "Data de Previsão", value: "data_previsao" },
       { text: "Entrega", value: "data_devolucao" },
-      { text: "Status", value: "status" },
+      { text: "Status", value: "status",  sortable: false, align: "center" },
       { text: "Ações", value: "acoes", sortable: false },
     ],
     users: [],
@@ -159,13 +194,11 @@ export default {
         email: "",
       },
     },
-
-    rules: [(value) => !!value || "Required.", (value) => (value && value.length >= 3) || "Minimo 3 caracteres"],
   }),
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "Novo Item" : "Edit Item";
+      return this.editedIndex === -1 ? "Novo Aluguel" : "Editar Aluguel";
     },
   },
   watch: {
@@ -179,7 +212,18 @@ export default {
     this.getAvailableBooks();
     this.getUsers();
   },
-
+  filters: {
+    formatDate: function (value) {
+      if (value) {
+        const date = new Date(value);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      return "";
+    },
+  },
   methods: {
     getRents() {
       Rent.getListRents().then((result) => {
@@ -201,12 +245,11 @@ export default {
       });
     },
     getStatusLabel(dataPrevisao, data_devolucao) {
-      const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().substr(0, 10);
       if (data_devolucao != null) {
-        if (dataPrevisao > today) {
-          return "No prazo";
+        if (dataPrevisao >= data_devolucao) {
+          return "Entregue no prazo";
         } else {
-          return "Atrasado";
+          return "Entregue com atraso";
         }
       } else {
         return "Pendente";
@@ -214,9 +257,8 @@ export default {
     },
     getStatusStyle(dataPrevisao, data_devolucao) {
       const style = {};
-      const today = new Date().toISOString().substr(0, 10);
       if (data_devolucao != null) {
-        if (dataPrevisao <= today) {
+        if (dataPrevisao < data_devolucao) {
           style.background = "#E65C5C";
           style.borderRadius = "100px";
         } else {
@@ -248,27 +290,22 @@ export default {
         });
     },
     save() {
-      if (this.editedIndex > 0) {
-        Object.assign(this.books[this.editedIndex], this.editedItem);
-        console.log(this.formTitle);
+      if (this.$refs.form.validate() == true) {
+        Rent.postAddRent(this.editedItem)
+          .then(() => {
+            this.AlertAdd();
+            this.close();
+            this.getRents();
+          })
+          .catch((error) => {
+            this.AlertError(error.detail);
+          });
       } else {
-        if (this.editedItem.id != 0) {
-          console.log("deu ruim");
-        } else {
-          if (this.editedIndex < -20) {
-            Swal.fire("", "Insira uma quantidades caracteres validos", "error");
-          } else {
-            Rent.postAddRent(this.editedItem)
-              .then(() => {
-                this.AlertAdd();
-                this.close();
-                this.getRents();
-              })
-              .catch((error) => {
-                this.AlertError(error.detail);
-              });
-          }
-        }
+        Toast.fire({
+          icon: "error",
+          title: "Erro",
+          text: "não foi possivel adicionar editora pois existe campos nulos",
+        });
       }
     },
 
@@ -285,11 +322,20 @@ export default {
           confirmButtonText: "Confirmar",
         }).then((result) => {
           if (result.isConfirmed) {
-            Swal.fire("Deleted!", "Aluguel deletado com sucesso", "success", this.deleteItem(item));
+            Toast.fire({
+              icon: "success",
+              title: "Sucesso!",
+              text: "Aluguel deletado com sucesso!!",
+            });
+            this.deleteItem(item);
           }
         });
       } else {
-        Swal.fire("Não foi possivel", "Não pode apagar registro que ja foi entregue", "error");
+        Toast.fire({
+          icon: "error",
+          title: "Não é possivel",
+          text: "Não pode apagar registro que ja foi entregue",
+        });
       }
     },
 
@@ -310,7 +356,13 @@ export default {
             const today = new Date().toISOString().substr(0, 10);
             item.data_devolucao = today;
             console.log(item);
-            Swal.fire("Entregue!", "Baixa feita com sucesso", "success", this.Delivery(item), console.log(item));
+            Toast.fire({
+              icon: "success",
+              title: "Entregue!!",
+              text: "Baixa feita com sucesso",
+            });
+            this.Delivery(item);
+            console.log(item);
           }
         });
       } else {
@@ -319,9 +371,12 @@ export default {
     },
 
     AlertAdd() {
-      Swal.fire("Sucesso", "O Aluguel foi adicionado com sucesso", "success");
+      Toast.fire({
+        icon: "success",
+        title: "Sucesso!",
+        text: "Editora foi Adicionada com sucesso!",
+      });
     },
-
     AlertError(error) {
       Swal.fire("Ocorreu um erro", error, "error");
     },
@@ -342,7 +397,47 @@ export default {
   font-size: 1rem !important;
   font-family: sans-serif;
 }
-#background {
-  background: #fafafa;
+.colored-toast.swal2-icon-success {
+  background-color: #689f38 !important;
+}
+
+.colored-toast.swal2-icon-error {
+  background-color: #e53935 !important;
+}
+
+.colored-toast.swal2-icon-warning {
+  background-color: #f8bb86 !important;
+}
+
+.colored-toast.swal2-icon-info {
+  background-color: #3fc3ee !important;
+}
+
+.colored-toast.swal2-icon-question {
+  background-color: #87adbd !important;
+}
+
+.colored-toast .swal2-title {
+  color: white;
+}
+
+.colored-toast .swal2-close {
+  color: white;
+}
+
+.colored-toast .swal2-html-container {
+  color: white;
+}
+.chip-custom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80%;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  background-color: #fff; 
 }
 </style>

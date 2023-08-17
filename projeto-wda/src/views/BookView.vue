@@ -19,37 +19,37 @@
 
                 <v-card-text>
                   <v-container>
-                    <v-row>
-                      <v-col cols="12">
-                        <v-text-field :rules="rules" v-model="editedItem.nome" label="Nome Livro"></v-text-field>
-                      </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col cols="12" sm="6">
-                        <v-text-field :rules="rules" v-model="editedItem.autor" label="Autor"></v-text-field>
-                      </v-col>
-                      <v-col>
-                      <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[() => !!editora || 'Campo obrigatório']" :items="editor" label="Editoras" placeholder="Select..." required></v-autocomplete>
-                    </v-col>
-                    </v-row>
-                    <v-row>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
-                      </v-col>
-                      <v-col cols="12" sm="6">
-                        <v-text-field v-model="editedItem.quantidade" label="Estoque"></v-text-field>
-                      </v-col>
-                    </v-row>
-                    
+                    <v-form ref="form" v-model="valid" lazy-validation>
+                      <v-row cols="12">
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome Livro" required></v-text-field>
+                        </v-col>
+                      </v-row>
+                      <v-row cols="12">
+                        <v-col cols="12" sm="6">
+                          <v-text-field  append-icon="mdi-book-account-outline" :rules="authorRules" v-model="editedItem.autor" label="Autor"></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[(v) => !!v || 'Editora é obrigatório']" :items="editor" label="Editoras" placeholder="Selecionar..." required></v-autocomplete>
+                        </v-col>
+                      </v-row>
+                      <v-row cols="12">
+                        <v-col cols="12" sm="6">
+                          <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                          <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.quantidade" label="Estoque"></v-text-field>
+                        </v-col>
+                      </v-row>
+                    </v-form>
                   </v-container>
                 </v-card-text>
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-                  <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
                 </v-card-actions>
-
               </v-card>
             </v-dialog>
             <v-spacer></v-spacer>
@@ -57,8 +57,18 @@
           </v-toolbar>
         </template>
         <template slot="item.acoes" slot-scope="{ item }">
-          <v-icon class="blue--text mr-2" @click="editItem(item)">mdi-pencil</v-icon>
-          <v-icon class="red--text" @click="ConfirmDeletar(item)">mdi-delete</v-icon>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
+            </template>
+            <span>Editar</span>
+          </v-tooltip>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-icon class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
+            </template>
+            <span>Excluir</span>
+          </v-tooltip>
         </template>
         <template v-slot:no-data>
           <div class="text-center">
@@ -77,10 +87,23 @@ import Swal from "sweetalert2";
 import Books from "../services/book_service";
 import Editors from "../services/editor_service";
 
+const Toast = Swal.mixin({
+  toast: true,
+  position: "bottom-right",
+  iconColor: "white",
+  customClass: {
+    popup: "colored-toast",
+  },
+  showConfirmButton: false,
+  timer: 1500,
+  timerProgressBar: true,
+});
+
 export default {
   name: "BookView",
 
   data: () => ({
+    valid: false,
     search: "",
     dialog: false,
     headers: [
@@ -106,7 +129,7 @@ export default {
         nome: "",
       },
       lancamento: "",
-      estoque: 0,
+      estoque: 1,
       totalalugado: 0,
     },
     defaultItem: {
@@ -120,12 +143,14 @@ export default {
       lancamento: "",
       estoque: 0,
     },
-    rules: [(value) => !!value || "Required.", (value) => (value && value.length >= 3) || "Minimo 3 caracteres"],
+    nameRules: [(v) => !!v || "Nome é obrigatório"],
+    authorRules: [(v) => !!v || "E-mail é obrigatório"],
+    launchRules: [(v) => !!v || "Cidade é obrigatório"],
   }),
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
+      return this.editedIndex === -1 ? "Novo Livro" : "Editar Livro";
     },
   },
   watch: {
@@ -169,11 +194,19 @@ export default {
     },
 
     save() {
-      if (this.editedIndex > 0) {
-        Object.assign(this.books[this.editedIndex], this.editedItem);
-        console.log(this.formTitle);
-      } else {
-        if (this.editedItem.id != 0) {
+      if (this.$refs.form.validate() === true) {
+        if (this.editedItem.id == -1) {
+          console.log(this.editedItem);
+          Books.postaddbook(this.editedItem)
+            .then(() => {
+              this.AlertAdd();
+              this.getbooks();
+              this.close();
+            })
+            .catch((error) => {
+              this.AlertError(error.detail);
+            });
+        } else {
           console.log(this.editItem);
           Books.putbookupdate(this.editedItem)
             .then(() => {
@@ -184,22 +217,13 @@ export default {
             .catch((error) => {
               this.AlertError(error.detail);
             });
-        } else {
-          if (this.editedItem.autor.length < 3 || this.editedItem.nome.length < 3) {
-            Swal.fire("", "Insira uma quantidades caracteres validos", "error");
-          } else {
-            console.log(this.editedItem);
-            Books.postaddbook(this.editedItem)
-              .then(() => {
-                this.AlertAdd();
-                this.getbooks();
-                this.close();
-              })
-              .catch((error) => {
-                this.AlertError(error.detail);
-              });
-          }
         }
+      } else {
+        Toast.fire({
+          icon: "error",
+          title: "Erro",
+          text: "não foi possivel adicionar Livro pois existe campos nulos",
+        });
       }
     },
 
@@ -221,11 +245,19 @@ export default {
     },
 
     AlertEdit() {
-      Swal.fire("Sucesso", "A editora foi editada com sucesso", "success");
+      Toast.fire({
+          icon: "success",
+          title: "Editora editada!",
+          text: "Livro foi editado com sucesso!",
+        });
     },
 
     AlertAdd() {
-      Swal.fire("Sucesso", "A editora foi Adicionada com sucesso", "success");
+      Toast.fire({
+          icon: "success",
+          title: "Sucesso!",
+          text: "Livro foi Adicionado com sucesso!",
+        });
     },
 
     AlertError(error) {
@@ -248,7 +280,35 @@ export default {
   font-size: 1rem !important;
   font-family: sans-serif;
 }
-#background {
-  background: #fafafa;
+.colored-toast.swal2-icon-success {
+  background-color: #689f38 !important;
+}
+
+.colored-toast.swal2-icon-error {
+  background-color: #e53935 !important;
+}
+
+.colored-toast.swal2-icon-warning {
+  background-color: #f8bb86 !important;
+}
+
+.colored-toast.swal2-icon-info {
+  background-color: #3fc3ee !important;
+}
+
+.colored-toast.swal2-icon-question {
+  background-color: #87adbd !important;
+}
+
+.colored-toast .swal2-title {
+  color: white;
+}
+
+.colored-toast .swal2-close {
+  color: white;
+}
+
+.colored-toast .swal2-html-container {
+  color: white;
 }
 </style>
