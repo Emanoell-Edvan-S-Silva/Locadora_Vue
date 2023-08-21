@@ -1,52 +1,56 @@
 <template>
   <v-app id="background">
-    <template>
+    <v-card class="pa-3 ma-5 elevation-3">
+      <template>
+        <v-toolbar flat class="mt-3">
+          <v-col class="mt-4 mb-4">
+            <v-row>
+              <v-toolbar-title class="text-h4">Usuário</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
+
+              <v-dialog v-model="dialog" max-width="500px">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Usuário </v-btn>
+                </template>
+
+                <v-card>
+                  <v-card-title>
+                    <span class="text-h5">{{ formTitle }}</span>
+                  </v-card-title>
+
+                  <v-card-text>
+                    <v-container>
+                      <v-form ref="form" v-model="valid" lazy-validation>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome" required></v-text-field>
+                        </v-col>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-email-edit" v-model="editedItem.email" :rules="emailRules" label="E-mail" required></v-text-field>
+                        </v-col>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
+                        </v-col>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-map-marker" v-model="editedItem.endereco" :rules="addressRules" label="Endereço" required></v-text-field>
+                        </v-col>
+                      </v-form>
+                    </v-container>
+                  </v-card-text>
+
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                    <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+              <v-spacer></v-spacer>
+              <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details class="mt-4"></v-text-field>
+            </v-row>
+          </v-col>
+        </v-toolbar>
+      </template>
       <v-data-table :headers="headers" :items="users" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
-        <template v-slot:top>
-          <v-toolbar flat>
-            <v-toolbar-title class="text-h4">Usuário</v-toolbar-title>
-            <v-divider class="mx-4" inset vertical></v-divider>
-
-            <v-dialog v-model="dialog" max-width="500px">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Usuário </v-btn>
-              </template>
-
-              <v-card>
-                <v-card-title>
-                  <span class="text-h5">{{ formTitle }}</span>
-                </v-card-title>
-
-                <v-card-text>
-                  <v-container>
-                    <v-form ref="form" v-model="valid" lazy-validation>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome" required></v-text-field>
-                      </v-col>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-email-edit" v-model="editedItem.email" :rules="emailRules" label="E-mail" required></v-text-field>
-                      </v-col>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
-                      </v-col>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-map-marker" v-model="editedItem.endereco" :rules="addressRules" label="Endereço" required></v-text-field>
-                      </v-col>
-                    </v-form>
-                  </v-container>
-                </v-card-text>
-
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
-                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-            <v-spacer></v-spacer>
-            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-          </v-toolbar>
-        </template>
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -68,7 +72,7 @@
           </div>
         </template>
       </v-data-table>
-    </template>
+    </v-card>
   </v-app>
 </template>
 
@@ -98,7 +102,7 @@ export default {
     dialog: false,
 
     headers: [
-      { text: "ID", value: "id", align: "start", sortable: false},
+      { text: "ID", value: "id", align: "start", sortable: false },
       { text: "Nome", value: "nome" },
       { text: "E-mail", value: "email" },
       { text: "Cidade", value: "cidade" },
@@ -169,7 +173,7 @@ export default {
 
     save() {
       if (this.$refs.form.validate() === true) {
-        if (this.editedItem.id == -1) {
+        if (this.editedIndex == -1) {
           User.postAddUser(this.editedItem)
             .then(() => {
               this.AlertAdd();
@@ -283,5 +287,11 @@ export default {
 
 .colored-toast .swal2-html-container {
   color: white;
+}
+
+@media (max-width: 900px) {
+  .searchBar {
+    display: flex;
+  }
 }
 </style>

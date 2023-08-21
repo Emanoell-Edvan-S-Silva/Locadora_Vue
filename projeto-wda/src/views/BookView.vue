@@ -1,61 +1,65 @@
 <template>
   <v-app id="background">
-    <template>
+    <v-card class="pa-3 ma-5 elevation-3">
+      <template>
+        <v-toolbar flat class="mt-3">
+          <v-col class="mt-4 mb-4">
+            <v-row>
+              <v-toolbar-title class="text-h4">Livros</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
+
+              <v-dialog v-model="dialog" max-width="500px">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Livro </v-btn>
+                </template>
+
+                <v-card>
+                  <v-card-title>
+                    <span class="text-h5">{{ formTitle }}</span>
+                  </v-card-title>
+
+                  <v-card-text>
+                    <v-container>
+                      <v-form ref="form" v-model="valid" lazy-validation>
+                        <v-row cols="12">
+                          <v-col cols="12">
+                            <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome Livro" required></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row cols="12">
+                          <v-col cols="12" sm="6">
+                            <v-text-field append-icon="mdi-book-account-outline" :rules="authorRules" v-model="editedItem.autor" label="Autor"></v-text-field>
+                          </v-col>
+                          <v-col cols="12" sm="6">
+                            <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[(v) => !!v || 'Editora é obrigatório']" :items="editor" label="Editoras" placeholder="Selecionar..." required></v-autocomplete>
+                          </v-col>
+                        </v-row>
+                        <v-row cols="12">
+                          <v-col cols="12" sm="6">
+                            <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
+                          </v-col>
+                          <v-col cols="12" sm="6">
+                            <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.quantidade" label="Estoque"></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </v-form>
+                    </v-container>
+                  </v-card-text>
+
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                    <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+              <v-spacer></v-spacer>
+              <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+            </v-row>
+          </v-col>
+        </v-toolbar>
+      </template>
       <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
-        <template v-slot:top>
-          <v-toolbar flat>
-            <v-toolbar-title class="text-h4">Livros</v-toolbar-title>
-            <v-divider class="mx-4" inset vertical></v-divider>
-
-            <v-dialog v-model="dialog" max-width="500px">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Livro </v-btn>
-              </template>
-
-              <v-card>
-                <v-card-title>
-                  <span class="text-h5">{{ formTitle }}</span>
-                </v-card-title>
-
-                <v-card-text>
-                  <v-container>
-                    <v-form ref="form" v-model="valid" lazy-validation>
-                      <v-row cols="12">
-                        <v-col cols="12">
-                          <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome Livro" required></v-text-field>
-                        </v-col>
-                      </v-row>
-                      <v-row cols="12">
-                        <v-col cols="12" sm="6">
-                          <v-text-field  append-icon="mdi-book-account-outline" :rules="authorRules" v-model="editedItem.autor" label="Autor"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[(v) => !!v || 'Editora é obrigatório']" :items="editor" label="Editoras" placeholder="Selecionar..." required></v-autocomplete>
-                        </v-col>
-                      </v-row>
-                      <v-row cols="12">
-                        <v-col cols="12" sm="6">
-                          <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                          <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.quantidade" label="Estoque"></v-text-field>
-                        </v-col>
-                      </v-row>
-                    </v-form>
-                  </v-container>
-                </v-card-text>
-
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
-                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-            <v-spacer></v-spacer>
-            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-          </v-toolbar>
-        </template>
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -77,7 +81,7 @@
           </div>
         </template>
       </v-data-table>
-    </template>
+    </v-card>
   </v-app>
 </template>
 
@@ -129,7 +133,7 @@ export default {
         nome: "",
       },
       lancamento: "",
-      estoque: 1,
+      quantidade: 1,
       totalalugado: 0,
     },
     defaultItem: {
@@ -141,7 +145,7 @@ export default {
         nome: "",
       },
       lancamento: "",
-      estoque: 0,
+      quantidade: 0,
     },
     nameRules: [(v) => !!v || "Nome é obrigatório"],
     authorRules: [(v) => !!v || "E-mail é obrigatório"],
@@ -195,7 +199,7 @@ export default {
 
     save() {
       if (this.$refs.form.validate() === true) {
-        if (this.editedItem.id == -1) {
+        if (this.editedIndex == -1) {
           console.log(this.editedItem);
           Books.postaddbook(this.editedItem)
             .then(() => {
@@ -246,18 +250,18 @@ export default {
 
     AlertEdit() {
       Toast.fire({
-          icon: "success",
-          title: "Editora editada!",
-          text: "Livro foi editado com sucesso!",
-        });
+        icon: "success",
+        title: "Editora editada!",
+        text: "Livro foi editado com sucesso!",
+      });
     },
 
     AlertAdd() {
       Toast.fire({
-          icon: "success",
-          title: "Sucesso!",
-          text: "Livro foi Adicionado com sucesso!",
-        });
+        icon: "success",
+        title: "Sucesso!",
+        text: "Livro foi Adicionado com sucesso!",
+      });
     },
 
     AlertError(error) {

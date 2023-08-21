@@ -40,7 +40,7 @@
               <v-toolbar-title class="subtitle-1 mt-0 mb-0">GRÁFICO DE SETORES</v-toolbar-title>
 
               <div>
-                <Doughnut ref="chart" :data="chartData" :options="chartOptions" />
+                <Doughnut v-if="loaded" ref="chart" :data="chartData" :options="chartOptions" />
               </div>
             </v-card>
           </v-col>
@@ -100,6 +100,12 @@
               <template v-slot:no-data>
                 <div class="text-center">Não possui aluguel Pendente</div>
               </template>
+              <template slot="item.data_aluguel" slot-scope="{ item }">
+                {{ item.data_aluguel | formatDate }}
+              </template>
+              <template slot="item.data_previsao" slot-scope="{ item }">
+                {{ item.data_previsao | formatDate }}
+              </template>
             </v-data-table>
           </v-col>
         </v-row>
@@ -134,6 +140,7 @@ const Toast = Swal.mixin({
 export default {
   components: { LateRentProgressBar, RentalsProgressBar, Doughnut },
   data: () => ({
+    loaded: false,
     lateRent: 0,
     outstandingRent: 0,
     RentOnTime: 0,
@@ -218,10 +225,21 @@ export default {
   mounted() {
     this.getlistMostRented();
     this.getlastRentals();
+    this.loaded = false;
   },
-
+  filters: {
+    formatDate: function (value) {
+      if (value) {
+        const date = new Date(value);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      return "";
+    },
+  },
   methods: {
-
     getStatusStyle() {
       const style = {
         background: "white",
@@ -233,7 +251,6 @@ export default {
 
     async getlistMostRented() {
       Dashboard.getlistMostRented().then((result) => {
-      
         this.listMostRented = result.data;
         this.cards.forEach((card, index) => {
           card.text = this.listMostRented[index].nome;
@@ -242,8 +259,6 @@ export default {
     },
     getlastRentals() {
       Dashboard.getListRents().then((resultado) => {
-        
-
         this.lastRentals = resultado.data.filter((item) => item.data_devolucao === null);
       });
     },
@@ -279,7 +294,6 @@ export default {
     },
 
     async ConfirmDelivery(item) {
-      
       if (item.data_devolucao == null) {
         Swal.fire({
           title: "Confirmação",
@@ -294,14 +308,13 @@ export default {
           if (result.isConfirmed) {
             const today = new Date().toISOString().substr(0, 10);
             item.data_devolucao = today;
-            
+
             Toast.fire({
               icon: "success",
               title: "Entregue!!",
               text: "Baixa feita com sucesso",
             });
             this.Delivery(item);
-            
           }
         });
       } else {
@@ -311,7 +324,6 @@ export default {
     Delivery(item) {
       Dashboard.putRentUpdate(item)
         .then(() => {
-          
           this.getlastRentals();
         })
         .catch((error) => {
@@ -319,7 +331,6 @@ export default {
         });
     },
     deleteItem(item) {
-      
       Dashboard.deleteRent(item).then(() => {
         this.getlastRentals();
       });
@@ -331,33 +342,32 @@ export default {
       this.$refs.chart.renderChart();
     },
   },
-  created(){
-    Dashboard.getListRents().then((resultado) => {
-        
+  created() {
+    Dashboard.getListRents()
+      .then((resultado) => {
         this.Rent = resultado.data;
         let alugueis = resultado.data;
         this.totalRentals = this.Rent.length;
         alugueis.forEach((aluguel) => {
-        if (aluguel.data_devolucao != null) {
-          if (aluguel.data_devolucao > aluguel.data_previsao) {
-            this.lateRent++;
-            this.chartData.datasets[0].data[2] = this.lateRent;
+          if (aluguel.data_devolucao != null) {
+            if (aluguel.data_devolucao > aluguel.data_previsao) {
+              this.lateRent++;
+              this.chartData.datasets[0].data[2] = this.lateRent;
+            } else {
+              this.RentOnTime++;
+              this.chartData.datasets[0].data[0] = this.RentOnTime;
+            }
           } else {
-            this.RentOnTime++;
-            this.chartData.datasets[0].data[0] = this.RentOnTime;
+            this.outstandingRent++;
+            this.chartData.datasets[0].data[1] = this.outstandingRent;
           }
-        } else {
-          this.outstandingRent++;
-          this.chartData.datasets[0].data[1] = this.outstandingRent;
-        }
-        
+        });
+        this.loaded = true;
+      })
+      .catch((error) => {
+        console.log(error);
       });
-    })
-    .catch(error => {
-      console.log(error);
-    });
-    
-  }
+  },
 };
 </script>
 

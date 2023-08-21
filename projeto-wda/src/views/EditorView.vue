@@ -1,56 +1,60 @@
 <template>
   <v-app id="background">
-    <template>
+    <v-card class="pa-3 ma-5 elevation-3">
+      <template>
+        <v-toolbar flat class="mt-3">
+          <v-col class="mt-4 mb-4">
+            <v-row>
+              <v-toolbar-title class="text-h4">Editora</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
+
+              <v-dialog v-model="dialog" max-width="500px">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Nova Editora </v-btn>
+                </template>
+
+                <v-card>
+                  <v-card-title>
+                    <span class="text-h5">{{ formTitle }}</span>
+                  </v-card-title>
+
+                  <v-card-text>
+                    <v-container>
+                      <v-form ref="form" v-model="valid" lazy-validation>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-domain" v-model="editedItem.nome" :rules="nameRules" label="Nome Editora" required></v-text-field>
+                        </v-col>
+                        <v-col cols="12">
+                          <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
+                        </v-col>
+                      </v-form>
+                    </v-container>
+                  </v-card-text>
+
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                    <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+              <v-spacer></v-spacer>
+              <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
+            </v-row>
+          </v-col>
+        </v-toolbar>
+      </template>
       <v-data-table :headers="headers" :items="editor" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id">
-        <template v-slot:top>
-          <v-toolbar flat>
-            <v-toolbar-title class="text-h4">Editora</v-toolbar-title>
-            <v-divider class="mx-4" inset vertical></v-divider>
-
-            <v-dialog v-model="dialog" max-width="500px">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Nova Editora </v-btn>
-              </template>
-
-              <v-card>
-                <v-card-title>
-                  <span class="text-h5">{{ formTitle }}</span>
-                </v-card-title>
-
-                <v-card-text>
-                  <v-container>
-                    <v-form ref="form" v-model="valid" lazy-validation>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-domain" v-model="editedItem.nome" :rules="nameRules" label="Nome Editora" required></v-text-field>
-                      </v-col>
-                      <v-col cols="12">
-                        <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
-                      </v-col>
-                    </v-form>
-                  </v-container>
-                </v-card-text>
-
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
-                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-            <v-spacer></v-spacer>
-            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-          </v-toolbar>
-        </template>
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
-              <v-icon  class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
+              <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
             </template>
             <span>Editar</span>
           </v-tooltip>
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
-              <v-icon  class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
+              <v-icon class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
             </template>
             <span>Excluir</span>
           </v-tooltip>
@@ -62,7 +66,7 @@
           </div>
         </template>
       </v-data-table>
-    </template>
+    </v-card>
   </v-app>
 </template>
 
@@ -205,18 +209,18 @@ export default {
 
     AlertEdit() {
       Toast.fire({
-          icon: "success",
-          title: "Editora editada!",
-          text: "Editora foi editada com sucesso!",
-        });
+        icon: "success",
+        title: "Editora editada!",
+        text: "Editora foi editada com sucesso!",
+      });
     },
 
     AlertAdd() {
       Toast.fire({
-          icon: "success",
-          title: "Sucesso!",
-          text: "Editora foi Adicionada com sucesso!",
-        });
+        icon: "success",
+        title: "Sucesso!",
+        text: "Editora foi Adicionada com sucesso!",
+      });
     },
 
     AlertError(error) {
@@ -240,11 +244,11 @@ export default {
   font-family: sans-serif;
 }
 .colored-toast.swal2-icon-success {
-  background-color: #689F38 !important;
+  background-color: #689f38 !important;
 }
 
 .colored-toast.swal2-icon-error {
-  background-color: #E53935 !important;
+  background-color: #e53935 !important;
 }
 
 .colored-toast.swal2-icon-warning {

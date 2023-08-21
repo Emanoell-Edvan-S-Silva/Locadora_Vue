@@ -1,67 +1,71 @@
 <template>
   <v-app id="background">
-    <template>
-      <v-data-table :headers="headers" :items="rents" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
-        <template v-slot:top>
-          <v-toolbar flat>
-            <v-toolbar-title class="text-h4">Aluguéis</v-toolbar-title>
-            <v-divider class="mx-4" inset vertical></v-divider>
+    <v-card class="pa-3 ma-5 elevation-3">
+      <template>
+        <v-toolbar flat class="mt-3">
+          <v-col class="mt-4 mb-4">
+            <v-row>
+              <v-toolbar-title class="text-h4">Aluguéis</v-toolbar-title>
+              <v-divider class="mx-4" inset vertical></v-divider>
 
-            <v-dialog v-model="dialog" max-width="500px">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Aluguel </v-btn>
-              </template>
+              <v-dialog v-model="dialog" max-width="500px">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on"> Novo Aluguel </v-btn>
+                </template>
 
-              <v-card>
-                <v-card-title>
-                  <span class="text-h5">{{ formTitle }}</span>
-                </v-card-title>
+                <v-card>
+                  <v-card-title>
+                    <span class="text-h5">{{ formTitle }}</span>
+                  </v-card-title>
 
-                <v-card-text>
-                  <v-container>
-                    <v-form ref="form" v-model="valid" lazy-validation>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.usuario_id.id" :rules="[(v) => !!v || 'Usuário é obrigatório']" :items="users" label="Usuário" placeholder="Selecionar..." required></v-autocomplete>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col cols="12">
-                          <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.livro_id.id" :rules="[(v) => !!v || 'Livro é obrigatório']" :items="availableBooks" label="Livro" placeholder="Selecionar..." required></v-autocomplete>
-                        </v-col>
-                      </v-row>
-                      <v-row>
-                        <v-col cols="12" sm="6">
-                          <v-text-field v-model="editedItem.data_aluguel" label="Data de Aluguel" readonly></v-text-field>
-                        </v-col>
-                        <v-col>
-                          <v-dialog ref="dialog" v-model="modal" :return-value.sync="editedItem.data_previsao" persistent width="290px">
-                            <template v-slot:activator="{ on, attrs }">
-                              <v-text-field :rules="[(v) => !!v || 'Data é obrigatório']" v-model="editedItem.data_previsao" label="Data de previsão" readonly v-bind="attrs" v-on="on"></v-text-field>
-                            </template>
-                            <v-date-picker v-model="editedItem.data_previsao" scrollable :min="minDate" :max="maxDate">
-                              <v-spacer></v-spacer>
-                              <v-btn text color="primary" @click="modal = false"> Cancel </v-btn>
-                              <v-btn text color="primary" @click="$refs.dialog.save(editedItem.data_previsao, editedItem.data_devolucao)"> OK </v-btn>
-                            </v-date-picker>
-                          </v-dialog>
-                        </v-col>
-                      </v-row>
-                    </v-form>
-                  </v-container>
-                </v-card-text>
+                  <v-card-text>
+                    <v-container>
+                      <v-form ref="form" v-model="valid" lazy-validation>
+                        <v-row>
+                          <v-col cols="12">
+                            <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.usuario_id.id" :rules="[(v) => !!v || 'Usuário é obrigatório']" :items="users" label="Usuário" placeholder="Selecionar..." required></v-autocomplete>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col cols="12">
+                            <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.livro_id.id" :rules="[(v) => !!v || 'Livro é obrigatório']" :items="availableBooks" label="Livro" placeholder="Selecionar..." required></v-autocomplete>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col cols="12" sm="6">
+                            <v-text-field v-model="editedItem.data_aluguel" label="Data de Aluguel" readonly></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-dialog ref="dialog" v-model="modal" :return-value.sync="editedItem.data_previsao" persistent width="290px">
+                              <template v-slot:activator="{ on, attrs }">
+                                <v-text-field :rules="[(v) => !!v || 'Data é obrigatório']" v-model="editedItem.data_previsao" label="Data de previsão" readonly v-bind="attrs" v-on="on"></v-text-field>
+                              </template>
+                              <v-date-picker v-model="editedItem.data_previsao" scrollable :min="minDate" :max="maxDate">
+                                <v-spacer></v-spacer>
+                                <v-btn text color="primary" @click="modal = false"> Cancel </v-btn>
+                                <v-btn text color="primary" @click="$refs.dialog.save(editedItem.data_previsao, editedItem.data_devolucao)"> OK </v-btn>
+                              </v-date-picker>
+                            </v-dialog>
+                          </v-col>
+                        </v-row>
+                      </v-form>
+                    </v-container>
+                  </v-card-text>
 
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
-                  <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-            <v-spacer></v-spacer>
-            <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details></v-text-field>
-          </v-toolbar>
-        </template>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red darken-1" text @click="close"> Cancelar </v-btn>
+                    <v-btn color="blue darken-1" text :disabled="!valid" @click="save"> Salvar </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+              <v-spacer></v-spacer>
+              <v-text-field v-model="search" append-icon="mdi-magnify" label="Search" single-line hide-details class="mt-4"></v-text-field>
+            </v-row>
+          </v-col>
+        </v-toolbar>
+      </template>
+      <v-data-table :headers="headers" :items="filteredReturnedRentals" sort-by="id" class="pa-3 ma-5 elevation-3">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom v-if="!item.data_devolucao">
             <template v-slot:activator="{ on, attrs }">
@@ -77,9 +81,9 @@
           </v-tooltip>
         </template>
         <template slot="item.status" slot-scope="{ item }">
-          <v-chip style="background-color: transparent;">
-          <span class="pa-1 pl-3 pr-3" :style="getStatusStyle(item.data_previsao, item.data_devolucao)">{{ getStatusLabel(item.data_previsao, item.data_devolucao) }}</span>
-        </v-chip>
+          <v-chip style="background-color: transparent">
+            <span class="pa-1 pl-3 pr-3" :style="getStatusStyle(item.data_previsao, item.data_devolucao)">{{ getStatusLabel(item.data_previsao, item.data_devolucao) }}</span>
+          </v-chip>
         </template>
         <template v-slot:no-data>
           <div class="text-center">
@@ -97,7 +101,7 @@
           {{ item.data_devolucao | formatDate }}
         </template>
       </v-data-table>
-    </template>
+    </v-card>
   </v-app>
 </template>
 
@@ -135,7 +139,7 @@ export default {
       { text: "Data de Aluguel", value: "data_aluguel" },
       { text: "Data de Previsão", value: "data_previsao" },
       { text: "Entrega", value: "data_devolucao" },
-      { text: "Status", value: "status",  sortable: false, align: "center" },
+      { text: "Status", value: "status", sortable: false, align: "center" },
       { text: "Ações", value: "acoes", sortable: false },
     ],
     users: [],
@@ -200,6 +204,10 @@ export default {
     formTitle() {
       return this.editedIndex === -1 ? "Novo Aluguel" : "Editar Aluguel";
     },
+
+    filteredReturnedRentals() {
+      return this.rents.filter((rents) => this.matchesSearch(rents, this.search));
+    },
   },
   watch: {
     dialog(val) {
@@ -215,10 +223,10 @@ export default {
   filters: {
     formatDate: function (value) {
       if (value) {
-        const date = new Date(value);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
+        const todaydate = new Date(value);
+        const day = String(todaydate.getDate()).padStart(2, "0");
+        const month = String(todaydate.getMonth() + 1).padStart(2, "0");
+        const year = todaydate.getFullYear();
         return `${day}/${month}/${year}`;
       }
       return "";
@@ -388,6 +396,30 @@ export default {
         this.editedIndex = -1;
       });
     },
+
+    matchesSearch(rents, search) {
+      const searchLower = search.toLowerCase();
+      const userIdMatches = String(rents.id).toLowerCase().includes(searchLower);
+      const userNameMatches = rents.usuario_id.nome.toLowerCase().includes(searchLower);
+      const bookNameMatches = rents.livro_id.nome.toLowerCase().includes(searchLower);
+      const dateMatches = this.matchesDateSearch(rents.data_aluguel, searchLower) || this.matchesDateSearch(rents.data_previsao, searchLower) || this.matchesDateSearch(rents.data_devolucao, searchLower);
+
+      return userIdMatches || userNameMatches || bookNameMatches || dateMatches;
+    },
+
+    matchesDateSearch(dateString, search) {
+      if (!dateString) {
+        return false;
+      }
+
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = String(date.getFullYear());
+
+      const formattedDate = `${day}/${month}/${year}`;
+      return formattedDate.includes(search);
+    },
   },
 };
 </script>
@@ -438,6 +470,6 @@ export default {
   padding: 6px 10px;
   border-radius: 20px;
   font-size: 12px;
-  background-color: #fff; 
+  background-color: #fff;
 }
 </style>
