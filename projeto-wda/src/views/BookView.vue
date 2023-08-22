@@ -192,9 +192,13 @@ export default {
 
     deleteItem(item) {
       console.log(item);
-      Books.deletebook(item).then(() => {
-        this.getbooks();
-      });
+      Books.deletebook(item)
+        .then(() => {
+          this.getbooks();
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     save() {
@@ -206,9 +210,10 @@ export default {
               this.AlertAdd();
               this.getbooks();
               this.close();
+              this.resetValidation()
             })
             .catch((error) => {
-              this.AlertError(error.detail);
+              this.AlertError(error.response.data.error);
             });
         } else {
           console.log(this.editItem);
@@ -217,9 +222,10 @@ export default {
               this.AlertEdit();
               this.getbooks();
               this.close();
+              this.resetValidation()
             })
             .catch((error) => {
-              this.AlertError(error.detail);
+              this.AlertError(error.response.data.error);
             });
         }
       } else {
@@ -265,7 +271,7 @@ export default {
     },
 
     AlertError(error) {
-      Swal.fire("Ocorreu um erro", error.detail, "error");
+      Swal.fire("Ocorreu um erro", error, "error");
     },
 
     close() {
@@ -274,6 +280,10 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+      this.resetValidation()
+    },
+    resetValidation() {
+      this.$refs.form.resetValidation();
     },
   },
 };

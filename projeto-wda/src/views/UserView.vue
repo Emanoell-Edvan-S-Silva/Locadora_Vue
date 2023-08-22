@@ -128,7 +128,7 @@ export default {
     },
 
     nameRules: [(v) => !!v || "Nome é obrigatório"],
-    emailRules: [(v) => !!v || "E-mail é obrigatório", (v) => /.+@.+\..+/.test(v) || "E-mail must be valid"],
+    emailRules: [(v) => !!v || "E-mail é obrigatório", (v) => /.+@.+\..+/.test(v) || "E-mail Invalido"],
     cityRules: [(v) => !!v || "Cidade é obrigatório"],
     addressRules: [(v) => !!v || "Endereço é obrigatório"],
   }),
@@ -156,19 +156,18 @@ export default {
       });
     },
 
-    deleteItem(item) {
-      console.log(item);
-      User.deleteUser(item).then(() => {
-        this.getUsers();
-      });
-    },
+    
 
     editItem(item) {
       this.editedIndex = !this.editedIndex;
       this.dialog = true;
-      User.getUniqueUser(item.id).then((result) => {
-        this.editedItem = result.data;
-      });
+      User.getUniqueUser(item.id)
+        .then((result) => {
+          this.editedItem = result.data;
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     save() {
@@ -179,9 +178,10 @@ export default {
               this.AlertAdd();
               this.close();
               this.getUsers();
+              this.resetValidation()
             })
             .catch((error) => {
-              this.AlertError(error);
+              this.AlertError(error.response.data.error);
             });
         } else {
           console.log(this.editItem);
@@ -190,9 +190,10 @@ export default {
               this.AlertEdit();
               this.close();
               this.getUsers();
+              this.resetValidation()
             })
             .catch((error) => {
-              this.AlertError(error.detail);
+              this.AlertError(error.response.data.error);
             });
         }
       } else {
@@ -204,8 +205,8 @@ export default {
       }
     },
 
-    ConfirmDeletar(item) {
-      Swal.fire({
+     ConfirmDeletar(item) {
+       Swal.fire({
         title: "Deletar?",
         text: "Deseja deletar esse usuário?",
         icon: "error",
@@ -216,9 +217,20 @@ export default {
         confirmButtonText: "Confirmar",
       }).then((result) => {
         if (result.isConfirmed) {
-          Swal.fire("Deleted!", "Usuário deletado com sucesso", "success", this.deleteItem(item));
+          this.deleteItem(item)
         }
       });
+    },
+     async deleteItem(item) {
+      console.log(item);
+      await User.deleteUser(item)
+        .then(() => {
+          this.getUsers();
+          Swal.fire("Deletado!", "Usuário deletado com sucesso", "success");
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     AlertEdit() {
@@ -238,7 +250,7 @@ export default {
     },
 
     AlertError(error) {
-      Swal.fire("Ocorreu um erro", error.detail, "error");
+      Swal.fire("Ocorreu um erro", error, "error");
     },
 
     close() {
@@ -247,6 +259,10 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+      this.resetValidation()
+    },
+    resetValidation() {
+      this.$refs.form.resetValidation();
     },
   },
 };

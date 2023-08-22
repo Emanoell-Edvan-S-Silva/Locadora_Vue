@@ -1,6 +1,6 @@
 <template>
   <v-app id="background">
-    <v-card class="pa-3 ma-5 elevation-3">
+    <v-card class="pa-6 ma-5 elevation-3">
       <v-toolbar flat>
         <v-toolbar-title class="text-h4">Dashboard</v-toolbar-title>
       </v-toolbar>
@@ -37,7 +37,7 @@
         <v-row class="mt-3">
           <v-col>
             <v-card class="pa-3 elevation-3">
-              <v-toolbar-title class="subtitle-1 mt-0 mb-0">GRÁFICO DE SETORES</v-toolbar-title>
+              <v-toolbar-title class="subtitle-1 mt-0 mb-0">GRÁFICO DE ALUGUÉIS</v-toolbar-title>
 
               <div>
                 <Doughnut v-if="loaded" ref="chart" :data="chartData" :options="chartOptions" />
@@ -48,65 +48,32 @@
           <v-col>
             <v-row>
               <v-col>
-                <v-card class="pa-2 elevation-3">
-                  <v-toolbar-title class="subtitle-1 mt-0 mb-0">META DE ALUGUÉIS</v-toolbar-title>
+                <v-card class="pt-7 pb-7 elevation-3">
+                  <v-list-item>
+                    <v-list-item-content>
+                      <div class="text mb-4">ULTIMO LIVRO ALUGADO:</div>
+                      <v-list-item-title class="text-h5 mb-1">
+                        {{ largestRent.livro_id.nome }}
+                      </v-list-item-title>
+                    </v-list-item-content>
+
+                    <v-list-item-avatar tile size="50">
+                      <v-icon large class="icon mb-5"> mdi mdi-book-clock </v-icon>
+                    </v-list-item-avatar>
+                  </v-list-item>
+                </v-card>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-card class="pa-4 pt-7 pb-5 elevation-3">
+                  <v-toolbar-title class="subtitle-1">META DE ALUGUÉIS</v-toolbar-title>
                   <div>
                     <RentalsProgressBar :total-rentals="totalRentals" />
                   </div>
                 </v-card>
               </v-col>
             </v-row>
-            <v-row>
-              <v-col>
-                <v-card class="pa-2 elevation-3">
-                  <v-toolbar-title class="subtitle-1 mt-0 mb-0">PORCENTAGENS DE LIVROS ATRASADOS</v-toolbar-title>
-                  <div style="align-items: center">
-                    <LateRentProgressBar :total-rentals="totalRentals" :late-aluguel="lateRent" />
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-col>
-        </v-row>
-
-        <v-row>
-          <v-col>
-            <v-data-table :headers="headers" :items="lastRentals" sort-by="id" class="pa-3 elevation-3" :items-per-page="5">
-              <template v-slot:top>
-                <v-toolbar flat>
-                  <v-toolbar-title class="subtitle-1">TABELA DE ULTIMOS ALUGUÉIS</v-toolbar-title>
-                </v-toolbar>
-              </template>
-              <template slot="item.status">
-                <v-chip style="background-color: transparent">
-                  <span class="pa-1 pl-3 pr-3" style="background: #f8c43e; border-radius: 50px">Pendente</span>
-                </v-chip>
-              </template>
-
-              <template slot="item.acoes" slot-scope="{ item }">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-icon class="green--text mr-2 custom-icon" @click="ConfirmDelivery(item)" v-bind="attrs" v-on="on">mdi-book-check</v-icon>
-                  </template>
-                  <span>Devolver</span>
-                </v-tooltip>
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-icon class="red--text mr-2 custom-icon" @click="ConfirmDeletar(item)" v-bind="attrs" v-on="on">mdi-delete</v-icon>
-                  </template>
-                  <span>Excluir</span>
-                </v-tooltip>
-              </template>
-              <template v-slot:no-data>
-                <div class="text-center">Não possui aluguel Pendente</div>
-              </template>
-              <template slot="item.data_aluguel" slot-scope="{ item }">
-                {{ item.data_aluguel | formatDate }}
-              </template>
-              <template slot="item.data_previsao" slot-scope="{ item }">
-                {{ item.data_previsao | formatDate }}
-              </template>
-            </v-data-table>
           </v-col>
         </v-row>
       </v-flex>
@@ -119,7 +86,6 @@ import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
 import Dashboard from "../services/dashboard_service";
 import RentalsProgressBar from "../components/ProgressBar.vue";
-import LateRentProgressBar from "../components/ProgressBarLateRent.vue";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "vue-chartjs";
 
@@ -138,13 +104,17 @@ const Toast = Swal.mixin({
 });
 
 export default {
-  components: { LateRentProgressBar, RentalsProgressBar, Doughnut },
+  components: { RentalsProgressBar, Doughnut },
   data: () => ({
     loaded: false,
+    editors: 0,
+    users: 0,
+    books: 0,
     lateRent: 0,
     outstandingRent: 0,
     RentOnTime: 0,
     totalRentals: 72,
+
     chartData: {
       labels: ["Devolvidos no prazo", "Pendente", "Devolvidos com Atraso"],
       datasets: [
@@ -193,7 +163,32 @@ export default {
         text: "",
       },
     ],
-
+    largestRent: {
+      id: 0,
+      data_aluguel: "",
+      data_previsao: "",
+      data_devolucao: "",
+      livro_id: {
+        id: 0,
+        nome: "",
+        editora: {
+          id: 0,
+          nome: "",
+          cidade: "",
+        },
+        autor: "",
+        lancamento: 0,
+        quantidade: 0,
+        totalalugado: 0,
+      },
+      usuario_id: {
+        id: 0,
+        nome: "",
+        endereco: "",
+        cidade: "",
+        email: "",
+      },
+    },
     editedItem: {
       id: 0,
       data_aluguel: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().substr(0, 10),
@@ -225,6 +220,7 @@ export default {
   mounted() {
     this.getlistMostRented();
     this.getlastRentals();
+
     this.loaded = false;
   },
   filters: {
@@ -239,6 +235,44 @@ export default {
       return "";
     },
   },
+  created() {
+    this.findLargestRent();
+    Dashboard.getListRents()
+      .then((resultado) => {
+        this.Rent = resultado.data;
+        let alugueis = resultado.data;
+        this.totalRentals = this.Rent.length;
+        alugueis.forEach((aluguel) => {
+          if (aluguel.data_devolucao != null) {
+            if (aluguel.data_devolucao > aluguel.data_previsao) {
+              this.lateRent++;
+              this.chartData.datasets[0].data[2] = this.lateRent;
+            } else {
+              this.RentOnTime++;
+              this.chartData.datasets[0].data[0] = this.RentOnTime;
+            }
+          } else {
+            this.outstandingRent++;
+            this.chartData.datasets[0].data[1] = this.outstandingRent;
+          }
+        });
+        this.loaded = true;
+      })
+      .catch((error) => {
+        this.AlertError(error.response.data.error);
+      });
+  },
+  watch: {
+    Rent: {
+      handler(newRent) {
+        // Quando a matriz Rent for alterada, encontre o aluguel com o maior ID
+        if (newRent.length > 0) {
+          this.largestRent = newRent.reduce((max, aluguel) => (aluguel.id > max.id ? aluguel : max));
+        }
+      },
+      deep: true, // Monitorar alterações profundas na matriz Rent
+    },
+  },
   methods: {
     getStatusStyle() {
       const style = {
@@ -249,6 +283,12 @@ export default {
       return style;
     },
 
+    findLargestRent() {
+      if (this.Rent.length > 0) {
+        this.largestRent = this.Rent.reduce((max, Rent) => (Rent.id > max.id ? Rent : max));
+        console.log(this.largestRent);
+      }
+    },
     async getlistMostRented() {
       Dashboard.getlistMostRented().then((result) => {
         this.listMostRented = result.data;
@@ -321,52 +361,34 @@ export default {
         Swal.fire("Livro já foi entregue", "Esse aluguel já foi dado baixa", "error");
       }
     },
+
     Delivery(item) {
       Dashboard.putRentUpdate(item)
         .then(() => {
           this.getlastRentals();
         })
         .catch((error) => {
-          this.AlertError(error.detail);
+          this.AlertError(error.response.data.error);
         });
     },
+
     deleteItem(item) {
-      Dashboard.deleteRent(item).then(() => {
-        this.getlastRentals();
-      });
+      Dashboard.deleteRent(item)
+        .then(() => {
+          this.getlastRentals();
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
+
     AlertError(error) {
       Swal.fire("Ocorreu um erro", error, "error");
     },
+
     updateChartData() {
       this.$refs.chart.renderChart();
     },
-  },
-  created() {
-    Dashboard.getListRents()
-      .then((resultado) => {
-        this.Rent = resultado.data;
-        let alugueis = resultado.data;
-        this.totalRentals = this.Rent.length;
-        alugueis.forEach((aluguel) => {
-          if (aluguel.data_devolucao != null) {
-            if (aluguel.data_devolucao > aluguel.data_previsao) {
-              this.lateRent++;
-              this.chartData.datasets[0].data[2] = this.lateRent;
-            } else {
-              this.RentOnTime++;
-              this.chartData.datasets[0].data[0] = this.RentOnTime;
-            }
-          } else {
-            this.outstandingRent++;
-            this.chartData.datasets[0].data[1] = this.outstandingRent;
-          }
-        });
-        this.loaded = true;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
   },
 };
 </script>

@@ -144,17 +144,25 @@ export default {
 
     deleteItem(item) {
       console.log(item);
-      Editors.deleteeditor(item).then(() => {
-        this.geteditors();
-      });
+      Editors.deleteeditor(item)
+        .then(() => {
+          this.geteditors();
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     editItem(item) {
       this.editedIndex = !this.editedIndex;
       this.dialog = true;
-      Editors.getuniqueeditor(item.id).then((result) => {
-        this.editedItem = result.data;
-      });
+      Editors.getuniqueeditor(item.id)
+        .then((result) => {
+          this.editedItem = result.data;
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     save() {
@@ -166,9 +174,10 @@ export default {
               this.AlertEdit();
               this.close();
               this.geteditors();
+              this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.detail);
+              this.AlertError(error.response.data.error);
             });
         } else {
           Editors.postaddeditor(this.editedItem)
@@ -176,9 +185,10 @@ export default {
               this.AlertAdd();
               this.close();
               this.geteditors();
+              this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error);
+              this.AlertError(error.response.data.error);
             });
         }
       } else {
@@ -233,6 +243,10 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+      this.resetValidation();
+    },
+    resetValidation() {
+      this.$refs.form.resetValidation();
     },
   },
 };

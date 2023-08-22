@@ -65,7 +65,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="filteredReturnedRentals" sort-by="id" class="pa-3 ma-5 elevation-3">
+      <v-data-table :headers="headers" :items="filteredReturnedRentals" sort-by="data_devolucao" class="pa-3 ma-5 elevation-3">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom v-if="!item.data_devolucao">
             <template v-slot:activator="{ on, attrs }">
@@ -138,7 +138,7 @@ export default {
       { text: "Nome Livro", value: "livro_id.nome" },
       { text: "Data de Aluguel", value: "data_aluguel" },
       { text: "Data de Previsão", value: "data_previsao" },
-      { text: "Entrega", value: "data_devolucao" },
+      { text: "Entrega", value: "data_devolucao", sortable: false },
       { text: "Status", value: "status", sortable: false, align: "center" },
       { text: "Ações", value: "acoes", sortable: false },
     ],
@@ -152,7 +152,7 @@ export default {
       data_previsao: "",
       data_devolucao: "",
       livro_id: {
-        id: 0,
+        id: null,
         nome: "",
         editora: {
           id: 0,
@@ -165,7 +165,7 @@ export default {
         totalalugado: 0,
       },
       usuario_id: {
-        id: 0,
+        id: null,
         nome: "",
         endereco: "",
         cidade: "",
@@ -179,22 +179,22 @@ export default {
       data_devolucao: "",
       livro_id: {
         id: null,
-        nome: "string",
+        nome: "",
         editora: {
           id: null,
-          nome: "string",
-          cidade: "string",
+          nome: "",
+          cidade: "",
         },
-        autor: "string",
+        autor: "",
         lancamento: 0,
         quantidade: 0,
         totalalugado: 0,
       },
       usuario_id: {
         id: null,
-        nome: "string",
-        endereco: "string",
-        cidade: "string",
+        nome: "",
+        endereco: "",
+        cidade: "",
         email: "",
       },
     },
@@ -294,7 +294,7 @@ export default {
           this.getRents();
         })
         .catch((error) => {
-          this.AlertError(error.detail);
+          this.AlertError(error.response.data.error);
         });
     },
     save() {
@@ -304,10 +304,13 @@ export default {
             this.AlertAdd();
             this.close();
             this.getRents();
+            this.resetValidation()
+            this.editedItem.usuario_id.id = null;
+            this.editedItem.livro_id.id = null;
           })
           .catch((error) => {
-            this.AlertError(error.detail);
-          });
+          this.AlertError(error.response.data.error);
+        });
       } else {
         Toast.fire({
           icon: "error",
@@ -395,6 +398,10 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+      this.resetValidation()
+    },
+    resetValidation() {
+      this.$refs.form.resetValidation();
     },
 
     matchesSearch(rents, search) {
