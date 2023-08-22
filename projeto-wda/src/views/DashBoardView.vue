@@ -265,12 +265,11 @@ export default {
   watch: {
     Rent: {
       handler(newRent) {
-        // Quando a matriz Rent for alterada, encontre o aluguel com o maior ID
         if (newRent.length > 0) {
           this.largestRent = newRent.reduce((max, aluguel) => (aluguel.id > max.id ? aluguel : max));
         }
       },
-      deep: true, // Monitorar alterações profundas na matriz Rent
+      deep: true,
     },
   },
   methods: {
