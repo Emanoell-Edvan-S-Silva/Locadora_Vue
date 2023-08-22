@@ -304,13 +304,13 @@ export default {
             this.AlertAdd();
             this.close();
             this.getRents();
-            this.resetValidation()
+            this.resetValidation();
             this.editedItem.usuario_id.id = null;
             this.editedItem.livro_id.id = null;
           })
           .catch((error) => {
-          this.AlertError(error.response.data.error);
-        });
+            this.AlertError(error.response.data.error);
+          });
       } else {
         Toast.fire({
           icon: "error",
@@ -398,7 +398,7 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
-      this.resetValidation()
+      this.resetValidation();
     },
     resetValidation() {
       this.$refs.form.resetValidation();
@@ -409,9 +409,10 @@ export default {
       const userIdMatches = String(rents.id).toLowerCase().includes(searchLower);
       const userNameMatches = rents.usuario_id.nome.toLowerCase().includes(searchLower);
       const bookNameMatches = rents.livro_id.nome.toLowerCase().includes(searchLower);
+      const statusMatches = this.getStatusLabel(rents.data_previsao, rents.data_devolucao).toLowerCase().includes(searchLower);
       const dateMatches = this.matchesDateSearch(rents.data_aluguel, searchLower) || this.matchesDateSearch(rents.data_previsao, searchLower) || this.matchesDateSearch(rents.data_devolucao, searchLower);
 
-      return userIdMatches || userNameMatches || bookNameMatches || dateMatches;
+      return statusMatches || userIdMatches || userNameMatches || bookNameMatches || dateMatches;
     },
 
     matchesDateSearch(dateString, search) {
