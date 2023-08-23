@@ -28,7 +28,7 @@ export default {
       return (this.totalRentals / this.maxRentals) * 100;
     },
     maxRentals() {
-      return 300;
+      return 400;
     },
   },
 };

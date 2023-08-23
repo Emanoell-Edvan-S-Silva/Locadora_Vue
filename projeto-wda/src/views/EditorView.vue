@@ -44,7 +44,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="editor" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id">
+      <v-data-table :headers="headers" :items="editor" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -59,11 +59,8 @@
             <span>Excluir</span>
           </v-tooltip>
         </template>
-        <template v-slot:no-data>
-          <div class="text-center">
-            Carregando...
-            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-          </div>
+        <template v-slot:no-results>
+          <span> Nenhum Resultado Encontrado </span>
         </template>
       </v-data-table>
     </v-card>
@@ -91,6 +88,7 @@ export default {
   name: "EditorView",
 
   data: () => ({
+    loading: false,
     valid: false,
     search: "",
     dialog: false,
@@ -136,20 +134,13 @@ export default {
 
   methods: {
     geteditors() {
-      Editors.getlisteditors().then((result) => {
-        console.log(result.data);
-        this.editor = result.data;
-      });
-    },
-
-    deleteItem(item) {
-      console.log(item);
-      Editors.deleteeditor(item)
-        .then(() => {
-          this.geteditors();
+      this.loading = true;
+      Editors.getlisteditors()
+        .then((result) => {
+          this.editor = result.data;
         })
-        .catch((error) => {
-          this.AlertError(error.response.data.error);
+        .finally(() => {
+          this.loading = false;
         });
     },
 
@@ -212,9 +203,20 @@ export default {
         confirmButtonText: "Confirmar",
       }).then((result) => {
         if (result.isConfirmed) {
-          Swal.fire("Deleted!", "Your file has been deleted.", "success", this.deleteItem(item));
+          this.deleteItem(item);
         }
       });
+    },
+    async deleteItem(item) {
+      console.log(item);
+      await Editors.deleteeditor(item)
+        .then(() => {
+          this.geteditors();
+          Swal.fire("Deletado!", "Editora deletada com sucesso", "success");
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     AlertEdit() {

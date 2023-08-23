@@ -65,7 +65,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="filteredReturnedRentals" sort-by="data_devolucao" class="pa-3 ma-5 elevation-3">
+      <v-data-table :headers="headers" :items="filteredReturnedRentals" sort-by="data_devolucao" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom v-if="!item.data_devolucao">
             <template v-slot:activator="{ on, attrs }">
@@ -85,11 +85,8 @@
             <span class="pa-1 pl-3 pr-3" :style="getStatusStyle(item.data_previsao, item.data_devolucao)">{{ getStatusLabel(item.data_previsao, item.data_devolucao) }}</span>
           </v-chip>
         </template>
-        <template v-slot:no-data>
-          <div class="text-center">
-            Carregando...
-            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-          </div>
+        <template v-slot:no-results>
+          <span> Nenhum Resultado Encontrado... </span>
         </template>
         <template slot="item.data_aluguel" slot-scope="{ item }">
           {{ item.data_aluguel | formatDate }}
@@ -126,6 +123,7 @@ export default {
   name: "RentView",
 
   data: () => ({
+    loading: false,
     valid: true,
     minDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().substr(0, 10),
     maxDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substr(0, 10),
@@ -206,7 +204,7 @@ export default {
     },
 
     filteredReturnedRentals() {
-      return this.rents.filter((rents) => this.matchesSearch(rents, this.search));
+      return this.rents.filter((rents) => this.Searchfunction(rents, this.search));
     },
   },
   watch: {
@@ -224,7 +222,7 @@ export default {
     formatDate: function (value) {
       if (value) {
         const todaydate = new Date(value);
-        const day = String(todaydate.getDate()).padStart(2, "0");
+        const day = String(todaydate.getDate() + 1).padStart(2, "0");
         const month = String(todaydate.getMonth() + 1).padStart(2, "0");
         const year = todaydate.getFullYear();
         return `${day}/${month}/${year}`;
@@ -234,11 +232,16 @@ export default {
   },
   methods: {
     getRents() {
-      Rent.getListRents().then((result) => {
-        console.log(result.data);
-        this.rents = result.data;
-        this.teste = result.usuario_id;
-      });
+      this.loading = true;
+      Rent.getListRents()
+        .then((result) => {
+          console.log(result.data);
+          this.rents = result.data;
+          this.teste = result.usuario_id;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     getAvailableBooks() {
       Rent.getBooksAvailable().then((result) => {
@@ -280,23 +283,7 @@ export default {
 
       return style;
     },
-    deleteItem(item) {
-      console.log(item);
-      Rent.deleteRent(item).then(() => {
-        this.getRents();
-      });
-    },
-    Delivery(item) {
-      Rent.putRentUpdate(item)
-        .then(() => {
-          console.log(item);
-          this.close();
-          this.getRents();
-        })
-        .catch((error) => {
-          this.AlertError(error.response.data.error);
-        });
-    },
+
     save() {
       if (this.$refs.form.validate() == true) {
         Rent.postAddRent(this.editedItem)
@@ -333,21 +320,22 @@ export default {
           confirmButtonText: "Confirmar",
         }).then((result) => {
           if (result.isConfirmed) {
-            Toast.fire({
-              icon: "success",
-              title: "Sucesso!",
-              text: "Aluguel deletado com sucesso!!",
-            });
             this.deleteItem(item);
           }
         });
-      } else {
-        Toast.fire({
-          icon: "error",
-          title: "Não é possivel",
-          text: "Não pode apagar registro que ja foi entregue",
-        });
       }
+    },
+
+    async deleteItem(item) {
+      console.log(item);
+      await Rent.deleteRent(item)
+        .then(() => {
+          this.getRents();
+          Swal.fire("Deletado!", "Aluguel deletado com sucesso", "success");
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     async ConfirmDelivery(item) {
@@ -381,6 +369,18 @@ export default {
       }
     },
 
+    Delivery(item) {
+      Rent.putRentUpdate(item)
+        .then(() => {
+          console.log(item);
+          this.close();
+          this.getRents();
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
+    },
+
     AlertAdd() {
       Toast.fire({
         icon: "success",
@@ -404,24 +404,24 @@ export default {
       this.$refs.form.resetValidation();
     },
 
-    matchesSearch(rents, search) {
+    Searchfunction(rents, search) {
       const searchLower = search.toLowerCase();
-      const userIdMatches = String(rents.id).toLowerCase().includes(searchLower);
-      const userNameMatches = rents.usuario_id.nome.toLowerCase().includes(searchLower);
-      const bookNameMatches = rents.livro_id.nome.toLowerCase().includes(searchLower);
-      const statusMatches = this.getStatusLabel(rents.data_previsao, rents.data_devolucao).toLowerCase().includes(searchLower);
-      const dateMatches = this.matchesDateSearch(rents.data_aluguel, searchLower) || this.matchesDateSearch(rents.data_previsao, searchLower) || this.matchesDateSearch(rents.data_devolucao, searchLower);
+      const userIdSearch = String(rents.id).toLowerCase().includes(searchLower);
+      const userNameSearch = rents.usuario_id.nome.toLowerCase().includes(searchLower);
+      const bookNameSearch = rents.livro_id.nome.toLowerCase().includes(searchLower);
+      const statusSearch = this.getStatusLabel(rents.data_previsao, rents.data_devolucao).toLowerCase().includes(searchLower);
+      const dateSearch = this.DateSearch(rents.data_aluguel, searchLower) || this.DateSearch(rents.data_previsao, searchLower) || this.DateSearch(rents.data_devolucao, searchLower);
 
-      return statusMatches || userIdMatches || userNameMatches || bookNameMatches || dateMatches;
+      return statusSearch || userIdSearch || userNameSearch || bookNameSearch || dateSearch;
     },
 
-    matchesDateSearch(dateString, search) {
-      if (!dateString) {
+    DateSearch(dateValue, search) {
+      if (!dateValue) {
         return false;
       }
 
-      const date = new Date(dateString);
-      const day = String(date.getDate()).padStart(2, "0");
+      const date = new Date(dateValue);
+      const day = String(date.getDate() + 1).padStart(2, "0");
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const year = String(date.getFullYear());
 

@@ -50,7 +50,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="users" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
+      <v-data-table :headers="headers" :items="users" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -65,11 +65,8 @@
             <span>Excluir</span>
           </v-tooltip>
         </template>
-        <template v-slot:no-data>
-          <div class="text-center">
-            Carregando...
-            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-          </div>
+        <template v-slot:no-results>
+          <span> Nenhum Resultado Encontrado... </span>
         </template>
       </v-data-table>
     </v-card>
@@ -97,6 +94,7 @@ export default {
   name: "UserView",
 
   data: () => ({
+    loading: false,
     valid: false,
     search: "",
     dialog: false,
@@ -150,13 +148,15 @@ export default {
 
   methods: {
     getUsers() {
-      User.getListUsers().then((result) => {
-        console.log(result.data);
-        this.users = result.data;
-      });
+      this.loading = true;
+      User.getListUsers()
+        .then((result) => {
+          this.users = result.data;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
-
-    
 
     editItem(item) {
       this.editedIndex = !this.editedIndex;
@@ -178,7 +178,7 @@ export default {
               this.AlertAdd();
               this.close();
               this.getUsers();
-              this.resetValidation()
+              this.resetValidation();
             })
             .catch((error) => {
               this.AlertError(error.response.data.error);
@@ -190,7 +190,7 @@ export default {
               this.AlertEdit();
               this.close();
               this.getUsers();
-              this.resetValidation()
+              this.resetValidation();
             })
             .catch((error) => {
               this.AlertError(error.response.data.error);
@@ -205,8 +205,8 @@ export default {
       }
     },
 
-     ConfirmDeletar(item) {
-       Swal.fire({
+    ConfirmDeletar(item) {
+      Swal.fire({
         title: "Deletar?",
         text: "Deseja deletar esse usuário?",
         icon: "error",
@@ -217,11 +217,11 @@ export default {
         confirmButtonText: "Confirmar",
       }).then((result) => {
         if (result.isConfirmed) {
-          this.deleteItem(item)
+          this.deleteItem(item);
         }
       });
     },
-     async deleteItem(item) {
+    async deleteItem(item) {
       console.log(item);
       await User.deleteUser(item)
         .then(() => {
@@ -259,7 +259,7 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
-      this.resetValidation()
+      this.resetValidation();
     },
     resetValidation() {
       this.$refs.form.resetValidation();

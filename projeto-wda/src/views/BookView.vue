@@ -59,7 +59,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3">
+      <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.acoes" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -74,11 +74,8 @@
             <span>Excluir</span>
           </v-tooltip>
         </template>
-        <template v-slot:no-data>
-          <div class="text-center">
-            Carregando...
-            <v-progress-circular indeterminate color="primary" class="ml-2" :width="2" :size="20"></v-progress-circular>
-          </div>
+        <template v-slot:no-results>
+          <span> Nenhum Resultado Encontrado... </span>
         </template>
       </v-data-table>
     </v-card>
@@ -107,6 +104,7 @@ export default {
   name: "BookView",
 
   data: () => ({
+    loading: false,
     valid: false,
     search: "",
     dialog: false,
@@ -170,10 +168,14 @@ export default {
 
   methods: {
     getbooks() {
-      Books.getlistbooks().then((result) => {
-        console.log(result.data);
-        this.books = result.data;
-      });
+      this.loading = true;
+      Books.getlistbooks()
+        .then((result) => {
+          this.books = result.data;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     geteditors() {
       Editors.getlisteditors().then((result2) => {
@@ -190,17 +192,6 @@ export default {
       });
     },
 
-    deleteItem(item) {
-      console.log(item);
-      Books.deletebook(item)
-        .then(() => {
-          this.getbooks();
-        })
-        .catch((error) => {
-          this.AlertError(error.response.data.error);
-        });
-    },
-
     save() {
       if (this.$refs.form.validate() === true) {
         if (this.editedIndex == -1) {
@@ -210,7 +201,7 @@ export default {
               this.AlertAdd();
               this.getbooks();
               this.close();
-              this.resetValidation()
+              this.resetValidation();
             })
             .catch((error) => {
               this.AlertError(error.response.data.error);
@@ -222,7 +213,7 @@ export default {
               this.AlertEdit();
               this.getbooks();
               this.close();
-              this.resetValidation()
+              this.resetValidation();
             })
             .catch((error) => {
               this.AlertError(error.response.data.error);
@@ -249,9 +240,21 @@ export default {
         confirmButtonText: "Confirmar",
       }).then((result) => {
         if (result.isConfirmed) {
-          Swal.fire("Deleted!", "Your file has been deleted.", "success", this.deleteItem(item));
+          this.deleteItem(item);
         }
       });
+    },
+
+    async deleteItem(item) {
+      console.log(item);
+      await Books.deletebook(item)
+        .then(() => {
+          this.getbooks();
+          Swal.fire("Deletado!", "Livro deletado com sucesso", "success");
+        })
+        .catch((error) => {
+          this.AlertError(error.response.data.error);
+        });
     },
 
     AlertEdit() {
@@ -280,7 +283,7 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
-      this.resetValidation()
+      this.resetValidation();
     },
     resetValidation() {
       this.$refs.form.resetValidation();
