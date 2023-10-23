@@ -22,10 +22,10 @@
                     <v-container>
                       <v-form ref="form" v-model="valid" lazy-validation>
                         <v-col cols="12">
-                          <v-text-field append-icon="mdi-domain" v-model="editedItem.nome" :rules="nameRules" label="Nome Editora" required></v-text-field>
+                          <v-text-field append-icon="mdi-domain" v-model="editedItem.name" :rules="nameRules" label="Nome Editora" required></v-text-field>
                         </v-col>
                         <v-col cols="12">
-                          <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
+                          <v-text-field append-icon="mdi-city" v-model="editedItem.city" :rules="cityRules" label="Cidade" required></v-text-field>
                         </v-col>
                       </v-form>
                     </v-container>
@@ -44,8 +44,8 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="editor" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
-        <template slot="item.acoes" slot-scope="{ item }">
+      <v-data-table :headers="headers" :items="publishers" :search="search" class="pa-3 ma-5 elevation-3" sort-by="id" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
+        <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
@@ -70,7 +70,7 @@
 <script>
 import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
-import Editors from "../services/editor_service";
+import Publisher from "../services/publisherService";
 
 const Toast = Swal.mixin({
   toast: true,
@@ -85,7 +85,7 @@ const Toast = Swal.mixin({
 });
 
 export default {
-  name: "EditorView",
+  name: "PublisherView",
 
   data: () => ({
     loading: false,
@@ -94,23 +94,27 @@ export default {
     dialog: false,
 
     headers: [
-      { text: "Nome", value: "nome", align: "center" },
-      { text: "Cidade", value: "cidade", align: "center" },
-      { text: "Ações", value: "acoes", sortable: false, align: "center" },
+      { text: "Nome", value: "name", align: "center" },
+      { text: "Cidade", value: "city", align: "center" },
+      { text: "Ações", value: "actions", sortable: false, align: "center" },
     ],
-    editor: [],
+
+    publishers: [],
+
     delete: {},
 
-    editedIndex: -1,
+    modalUpdateAndCreate: -1,
+
     editedItem: {
+      city: "",
       id: 0,
-      cidade: "",
-      nome: "",
+      name: "",
     },
+
     defaultItem: {
+      city: "",
       id: 0,
-      cidade: "",
-      nome: "",
+      name: "",
     },
 
     nameRules: [(v) => !!v || "Nome é obrigatório"],
@@ -119,25 +123,27 @@ export default {
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "Nova Editora" : "Editar Editora";
+      return this.modalUpdateAndCreate === -1 ? "Nova Editora" : "Editar Editora";
     },
   },
+
   watch: {
     dialog(val) {
       val || this.close();
     },
   },
+
   mounted() {
-    this.geteditors();
-    console.log(this.editor);
+    this.findAllPublishers();
+    console.log(this.publishers);
   },
 
   methods: {
-    geteditors() {
+    findAllPublishers() {
       this.loading = true;
-      Editors.getlisteditors()
+      Publisher.findAllPublishers()
         .then((result) => {
-          this.editor = result.data;
+          this.publishers = result.data;
         })
         .finally(() => {
           this.loading = false;
@@ -145,9 +151,9 @@ export default {
     },
 
     editItem(item) {
-      this.editedIndex = !this.editedIndex;
+      this.modalUpdateAndCreate = 0;
       this.dialog = true;
-      Editors.getuniqueeditor(item.id)
+      Publisher.findByIdPublisher(item.id)
         .then((result) => {
           this.editedItem = result.data;
         })
@@ -158,28 +164,28 @@ export default {
 
     save() {
       if (this.$refs.form.validate() === true) {
-        if (this.editedIndex == -1) {
-          console.log(this.editItem);
-          Editors.puteditorupdate(this.editedItem)
+        if (this.modalUpdateAndCreate == 0) {
+          console.log(this.editedItem);
+          Publisher.updatePublisher(this.editedItem)
             .then(() => {
               this.AlertEdit();
               this.close();
-              this.geteditors();
+              this.findAllPublishers();
               this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         } else {
-          Editors.postaddeditor(this.editedItem)
+          Publisher.createNewPublisher(this.editedItem)
             .then(() => {
               this.AlertAdd();
               this.close();
-              this.geteditors();
+              this.findAllPublishers();
               this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         }
       } else {
@@ -207,15 +213,16 @@ export default {
         }
       });
     },
+
     async deleteItem(item) {
       console.log(item);
-      await Editors.deleteeditor(item)
+      await Publisher.deletePublisher(item.id)
         .then(() => {
-          this.geteditors();
-          Swal.fire("Deletado!", "Editora deletada com sucesso", "success");
+          this.findAllPublishers();
+          this.AlertDelete();
         })
         .catch((error) => {
-          this.AlertError(error.response.data.error);
+          this.AlertError(error.response.data.detail);
         });
     },
 
@@ -234,6 +241,14 @@ export default {
         text: "Editora foi Adicionada com sucesso!",
       });
     },
+    
+    AlertDelete() {
+      Toast.fire({
+        icon: "success",
+        title: "Sucesso!",
+        text: "Editora foi Deletada com sucesso!",
+      });
+    },
 
     AlertError(error) {
       Swal.fire("Ocorreu um erro", error, "error");
@@ -242,11 +257,12 @@ export default {
     close() {
       this.dialog = false;
       this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
+        this.editedItem = Object.assign({}, this.Model);
+        this.modalUpdateAndCreate = -1;
       });
       this.resetValidation();
     },
+    
     resetValidation() {
       this.$refs.form.resetValidation();
     },
@@ -254,7 +270,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .swal2-popup {
   font-size: 1rem !important;
   font-family: sans-serif;

@@ -28,7 +28,7 @@ export default {
       return (this.totalRentals / this.maxRentals) * 100;
     },
     maxRentals() {
-      return 400;
+      return 100;
     },
   },
 };
@@ -57,7 +57,7 @@ export default {
 }
 .progress-bar {
   width: 100%;
-  height: 15px;
+  height: 10px;
   background-color: #f0f0f0;
   border-radius: 4px;
   overflow: hidden;

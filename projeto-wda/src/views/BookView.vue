@@ -23,23 +23,23 @@
                       <v-form ref="form" v-model="valid" lazy-validation>
                         <v-row cols="12">
                           <v-col cols="12">
-                            <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome Livro" required></v-text-field>
+                            <v-text-field append-icon="mdi-account" v-model="editedItem.name" :rules="nameRules" label="Nome Livro" required></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row cols="12">
+                          <v-col cols="12">
+                            <v-text-field append-icon="mdi-book-account-outline" :rules="authorRules" v-model="editedItem.author" label="Autor"></v-text-field>
+                          </v-col>
+                          <v-col cols="12">
+                            <v-autocomplete item-text="name" item-value="id" v-model="editedItem.publisher.id" :rules="[(v) => !!v || 'Editora é obrigatório']" :items="publishers" label="Editoras" placeholder="Selecionar..." required lazy-validation></v-autocomplete>
                           </v-col>
                         </v-row>
                         <v-row cols="12">
                           <v-col cols="12" sm="6">
-                            <v-text-field append-icon="mdi-book-account-outline" :rules="authorRules" v-model="editedItem.autor" label="Autor"></v-text-field>
+                            <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.launch" label="Lançamento"></v-text-field>
                           </v-col>
                           <v-col cols="12" sm="6">
-                            <v-autocomplete item-text="nome" item-value="id" v-model="editedItem.editora.id" :rules="[(v) => !!v || 'Editora é obrigatório']" :items="editor" label="Editoras" placeholder="Selecionar..." required></v-autocomplete>
-                          </v-col>
-                        </v-row>
-                        <v-row cols="12">
-                          <v-col cols="12" sm="6">
-                            <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.lancamento" label="Lançamento"></v-text-field>
-                          </v-col>
-                          <v-col cols="12" sm="6">
-                            <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.quantidade" label="Estoque"></v-text-field>
+                            <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.amount" label="Estoque"></v-text-field>
                           </v-col>
                         </v-row>
                       </v-form>
@@ -60,7 +60,7 @@
         </v-toolbar>
       </template>
       <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
-        <template slot="item.acoes" slot-scope="{ item }">
+        <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
@@ -85,8 +85,8 @@
 <script>
 import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
-import Books from "../services/book_service";
-import Editors from "../services/editor_service";
+import Books from "../services/bookService";
+import Publishers from "../services/publisherService";
 
 const Toast = Swal.mixin({
   toast: true,
@@ -109,42 +109,59 @@ export default {
     search: "",
     dialog: false,
     headers: [
-      { text: "ID", value: "id", align: "start", sortable: false },
-      { text: "Nome", value: "nome" },
-      { text: "Autor", value: "autor" },
-      { text: "Editora", value: "editora.nome" },
-      { text: "Lançamento", value: "lancamento" },
-      { text: "Estoque", value: "quantidade" },
-      { text: "Alugados", value: "totalalugado" },
-      { text: "Ações", value: "acoes", sortable: false },
+      { text: "Nome", value: "name" },
+      { text: "Autor", value: "author" },
+      { text: "Editora", value: "publisher.name" },
+      { text: "Lançamento", value: "launch" },
+      { text: "Estoque", value: "amount" },
+      { text: "Alugados", value: "total_leased" },
+      { text: "Ações", value: "actions", sortable: false },
     ],
     books: [],
-    editor: [],
+    publishers: [],
 
     editedIndex: -1,
     editedItem: {
+      amount: 0,
+      author: "",
       id: 0,
-      nome: "",
-      editora: {
+      launch: 0,
+      name: "",
+      publisher: {
         id: 0,
-        cidade: "",
-        nome: "",
+        name: "",
       },
-      lancamento: "",
-      quantidade: 1,
-      totalalugado: 0,
+      total_leased: 0,
     },
     defaultItem: {
+      amount: 0,
+      author: "",
       id: 0,
-      nome: "",
-      editora: {
-        cidade: "",
+      launch: 0,
+      name: "",
+      publisher: {
         id: 0,
-        nome: "",
+        name: "",
       },
-      lancamento: "",
-      quantidade: 0,
+      total_leased: 0,
     },
+    createItem: {
+      amount: 0,
+      author: "",
+      launch: 0,
+      name: "",
+      publisherId: 0,
+    },
+
+    updateItem: {
+      amount: 0,
+      author: "",
+      id: 0,
+      launch: 0,
+      name: "",
+      publisherId: 0,
+    },
+
     nameRules: [(v) => !!v || "Nome é obrigatório"],
     authorRules: [(v) => !!v || "E-mail é obrigatório"],
     launchRules: [(v) => !!v || "Cidade é obrigatório"],
@@ -163,13 +180,13 @@ export default {
   mounted() {
     this.getbooks();
     this.geteditors();
-    console.log(this.editor);
+    console.log(this.publishers);
   },
 
   methods: {
     getbooks() {
       this.loading = true;
-      Books.getlistbooks()
+      Books.findAllBooks()
         .then((result) => {
           this.books = result.data;
         })
@@ -178,16 +195,16 @@ export default {
         });
     },
     geteditors() {
-      Editors.getlisteditors().then((result2) => {
+      Publishers.findAllPublishers().then((result2) => {
         console.log(result2.data);
-        this.editor = result2.data;
+        this.publishers = result2.data;
       });
     },
 
     editItem(item) {
-      this.editedIndex = !this.editedIndex;
+      this.editedIndex = 0;
       this.dialog = true;
-      Books.getuniquebook(item.id).then((result) => {
+      Books.findByIdBook(item.id).then((result) => {
         this.editedItem = result.data;
       });
     },
@@ -195,28 +212,39 @@ export default {
     save() {
       if (this.$refs.form.validate() === true) {
         if (this.editedIndex == -1) {
-          console.log(this.editedItem);
-          Books.postaddbook(this.editedItem)
+          this.createItem.amount = this.editedItem.amount;
+          this.createItem.author = this.editedItem.author;
+          this.createItem.launch = this.editedItem.launch;
+          this.createItem.name = this.editedItem.name;
+          this.createItem.publisherId = this.editedItem.publisher.id;
+          Books.createNewBook(this.createItem)
             .then(() => {
               this.AlertAdd();
+              this.resetValidation();
               this.getbooks();
               this.close();
               this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         } else {
+          this.updateItem.amount = this.editedItem.amount;
+          this.updateItem.author = this.editedItem.author;
+          this.updateItem.id = this.editedItem.id;
+          this.updateItem.launch = this.editedItem.launch;
+          this.updateItem.name = this.editedItem.name;
+          this.updateItem.publisherId = this.editedItem.publisher.id;
           console.log(this.editItem);
-          Books.putbookupdate(this.editedItem)
+          Books.updateBook(this.updateItem)
             .then(() => {
               this.AlertEdit();
               this.getbooks();
-              this.close();
               this.resetValidation();
+              this.close();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         }
       } else {
@@ -247,13 +275,13 @@ export default {
 
     async deleteItem(item) {
       console.log(item);
-      await Books.deletebook(item)
+      await Books.deleteBook(item.id)
         .then(() => {
           this.getbooks();
-          Swal.fire("Deletado!", "Livro deletado com sucesso", "success");
+          this.AlertDelete();
         })
         .catch((error) => {
-          this.AlertError(error.response.data.error);
+          this.AlertError(error.response.data.detail);
         });
     },
 
@@ -272,19 +300,29 @@ export default {
         text: "Livro foi Adicionado com sucesso!",
       });
     },
+    AlertDelete() {
+      Toast.fire({
+        icon: "success",
+        title: "Deletado!",
+        text: "Livro foi deletado com sucesso!",
+      });
+    },
 
     AlertError(error) {
       Swal.fire("Ocorreu um erro", error, "error");
     },
 
     close() {
+      this.resetValidation();
       this.dialog = false;
       this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedItem = this.defaultItem;
+        this.editedItem.publisher.id = 0;
         this.editedIndex = -1;
       });
-      this.resetValidation();
+      console.log(this.editedItem);
     },
+
     resetValidation() {
       this.$refs.form.resetValidation();
     },

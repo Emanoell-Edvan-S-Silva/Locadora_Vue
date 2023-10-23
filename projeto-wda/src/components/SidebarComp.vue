@@ -36,8 +36,8 @@ export default {
       { url:'/',text: 'DashBoard', icon: 'mdi-home' },
       { url:'/Users',text: 'Usuario', icon: 'mdi-account-circle' },
       { url:'/Books',text: 'Livros', icon: 'mdi-notebook-outline' },
-      { url:'/Editors',text: 'Editoras', icon: 'mdi-bookshelf' },
-      { url:'/Rents',text: 'Alugueis', icon: 'mdi-format-list-checkbox' }
+      { url:'/Publishers',text: 'Editoras', icon: 'mdi-bookshelf' },
+      { url:'/OutstandingRentals',text: 'Alugueis', icon: 'mdi-format-list-checkbox' }
     ],
   }),
 

@@ -22,16 +22,16 @@
                     <v-container>
                       <v-form ref="form" v-model="valid" lazy-validation>
                         <v-col cols="12">
-                          <v-text-field append-icon="mdi-account" v-model="editedItem.nome" :rules="nameRules" label="Nome" required></v-text-field>
+                          <v-text-field append-icon="mdi-account" v-model="editedItem.name" :rules="nameRules" label="Nome" required></v-text-field>
                         </v-col>
                         <v-col cols="12">
                           <v-text-field append-icon="mdi-email-edit" v-model="editedItem.email" :rules="emailRules" label="E-mail" required></v-text-field>
                         </v-col>
                         <v-col cols="12">
-                          <v-text-field append-icon="mdi-city" v-model="editedItem.cidade" :rules="cityRules" label="Cidade" required></v-text-field>
+                          <v-text-field append-icon="mdi-city" v-model="editedItem.city" :rules="cityRules" label="Cidade" required></v-text-field>
                         </v-col>
                         <v-col cols="12">
-                          <v-text-field append-icon="mdi-map-marker" v-model="editedItem.endereco" :rules="addressRules" label="Endereço" required></v-text-field>
+                          <v-text-field append-icon="mdi-map-marker" v-model="editedItem.address" :rules="addressRules" label="Endereço" required></v-text-field>
                         </v-col>
                       </v-form>
                     </v-container>
@@ -51,7 +51,7 @@
         </v-toolbar>
       </template>
       <v-data-table :headers="headers" :items="users" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
-        <template slot="item.acoes" slot-scope="{ item }">
+        <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <v-icon class="blue--text mr-2 custom-icon" @click="editItem(item)" v-bind="attrs" v-on="on">mdi-pencil</v-icon>
@@ -76,7 +76,7 @@
 <script>
 import "@mdi/font/css/materialdesignicons.min.css";
 import Swal from "sweetalert2";
-import User from "../services/user_service";
+import User from "../services/userService";
 
 const Toast = Swal.mixin({
   toast: true,
@@ -100,29 +100,28 @@ export default {
     dialog: false,
 
     headers: [
-      { text: "ID", value: "id", align: "start", sortable: false },
-      { text: "Nome", value: "nome" },
+      { text: "Nome", value: "name" },
       { text: "E-mail", value: "email" },
-      { text: "Cidade", value: "cidade" },
-      { text: "Endereço", value: "endereco" },
-      { text: "Ações", value: "acoes", sortable: false },
+      { text: "Cidade", value: "city" },
+      { text: "Endereço", value: "address" },
+      { text: "Ações", value: "actions", sortable: false },
     ],
     users: [],
 
     editedIndex: -1,
     editedItem: {
-      cidade: "",
+      address: "",
+      city: "",
       email: "",
-      endereco: "",
-      id: null,
-      nome: "",
+      id: 0,
+      name: ""
     },
     defaultItem: {
-      cidade: "",
+      address: "",
+      city: "",
       email: "",
-      endereco: "",
-      id: null,
-      nome: "",
+      id: 0,
+      name: ""
     },
 
     nameRules: [(v) => !!v || "Nome é obrigatório"],
@@ -149,7 +148,7 @@ export default {
   methods: {
     getUsers() {
       this.loading = true;
-      User.getListUsers()
+      User.findAllUsers()
         .then((result) => {
           this.users = result.data;
         })
@@ -159,21 +158,21 @@ export default {
     },
 
     editItem(item) {
-      this.editedIndex = !this.editedIndex;
+      this.editedIndex = 0;
       this.dialog = true;
-      User.getUniqueUser(item.id)
+      User.findByIdUser(item.id)
         .then((result) => {
           this.editedItem = result.data;
         })
         .catch((error) => {
-          this.AlertError(error.response.data.error);
+          this.AlertError(error.response.data.errors[0]);
         });
     },
 
     save() {
-      if (this.$refs.form.validate() === true) {
+      if (this.$refs.form.validate()) {
         if (this.editedIndex == -1) {
-          User.postAddUser(this.editedItem)
+          User.createNewUser(this.editedItem)
             .then(() => {
               this.AlertAdd();
               this.close();
@@ -181,11 +180,11 @@ export default {
               this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         } else {
           console.log(this.editItem);
-          User.putUserUpdate(this.editedItem)
+          User.updateUser(this.editedItem)
             .then(() => {
               this.AlertEdit();
               this.close();
@@ -193,7 +192,7 @@ export default {
               this.resetValidation();
             })
             .catch((error) => {
-              this.AlertError(error.response.data.error);
+              this.AlertError(error.response.data.errors[0]);
             });
         }
       } else {
@@ -223,13 +222,13 @@ export default {
     },
     async deleteItem(item) {
       console.log(item);
-      await User.deleteUser(item)
+      await User.deleteUser(item.id)
         .then(() => {
           this.getUsers();
-          Swal.fire("Deletado!", "Usuário deletado com sucesso", "success");
+          this.AlertDelete();
         })
         .catch((error) => {
-          this.AlertError(error.response.data.error);
+          this.AlertError(error.response.data.detail);
         });
     },
 
@@ -246,6 +245,14 @@ export default {
         icon: "success",
         title: "Sucesso!",
         text: "Usuário foi Adicionado com sucesso!",
+      });
+    },
+
+    AlertDelete() {
+      Toast.fire({
+        icon: "success",
+        title: "Deletado!",
+        text: "Usuário foi deletado com sucesso!",
       });
     },
 
