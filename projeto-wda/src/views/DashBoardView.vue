@@ -164,6 +164,7 @@ export default {
         this.totalRentals = result.data.length;
       });
     },
+
     chartFunction() {
       Dashboard.findLateRentals().then((result) => {
         this.LateRentals = result.data.length;
@@ -180,6 +181,7 @@ export default {
         this.loaded = true;
       });
     },
+
     async getlistMostRented() {
       Dashboard.findMostRentedBooks().then((result) => {
         this.listMostRented = result.data;
@@ -194,11 +196,13 @@ export default {
         this.listAllPublishers = result.data.length;
       });
     },
+
     async getlistBookRegistrations() {
       Dashboard.findAllBooks().then((result) => {
         this.listAllBooks = result.data.length;
       });
     },
+
     async getlistUserRegistrations() {
       Dashboard.findAllUsers().then((result) => {
         this.listAllUsers = result.data.length;

@@ -5,7 +5,7 @@ import Dashboard from '../views/DashBoardView.vue';
 import UserView from '../views/UserView.vue';
 import BookView from '../views/BookView.vue';
 import PublisherView from '../views/PublisherView.vue';
-import OutstandingRentalsView from '../views/RentalView.vue';
+import RentalsView from '../views/RentalView.vue';
 
 Vue.use(Router)
 
@@ -29,8 +29,8 @@ export default new Router({
             component: PublisherView
         },
         {
-            path: '/OutstandingRentals',
-            component: OutstandingRentalsView
+            path: '/Rentals',
+            component: RentalsView
         },
         
     ],

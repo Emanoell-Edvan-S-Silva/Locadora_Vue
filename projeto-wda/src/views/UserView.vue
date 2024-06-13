@@ -50,7 +50,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="users" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
+      <v-data-table :headers="headers" :items="users" :search="search" sort-by="name" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -228,7 +228,7 @@ export default {
           this.AlertDelete();
         })
         .catch((error) => {
-          this.AlertError(error.response.data.detail);
+          this.AlertError(error.response.data.errors[0]);
         });
     },
 

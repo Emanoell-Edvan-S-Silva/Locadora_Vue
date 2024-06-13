@@ -69,7 +69,7 @@
         </v-col>
       </v-row>
 
-      <v-data-table :headers="headers" :items="filteredRentals" :search="search" sort-by="returndate" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
+      <v-data-table :headers="headers" :items="filteredRentals" :search="search" sort-by="user.name" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom v-if="!item.returndate">
             <template v-slot:activator="{ on, attrs }">
@@ -84,15 +84,7 @@
             <span>Excluir</span>
           </v-tooltip>
         </template>
-        <template slot="item.rentaldate" slot-scope="{ item }">
-          {{ item.rentaldate | formatDate }}
-        </template>
-        <template slot="item.previsiondate" slot-scope="{ item }">
-          {{ item.previsiondate | formatDate }}
-        </template>
-        <template slot="item.returndate" slot-scope="{ item }">
-          {{ item.returndate | formatDate }}
-        </template>
+
         <template slot="item.status" slot-scope="{ item }">
           <v-chip style="background-color: transparent">
             <span class="chip-custom" :class="getColor(item)">
@@ -214,10 +206,9 @@ export default {
     console.log(this.rents);
     this.getAvailableBooks();
     this.getUsers();
-    this.resetValidation();
   },
 
-  filters: {
+  methods: {
     formatDate: function (value) {
       if (value) {
         const todaydate = new Date(value);
@@ -229,8 +220,7 @@ export default {
       }
       return "";
     },
-  },
-  methods: {
+
     toggleReturned(showReturned) {
       this.showReturned = showReturned;
     },
@@ -248,30 +238,34 @@ export default {
     },
 
     getRents() {
-  this.loading = true;
-  Rental.findAllOutstandingRentals()
-    .then((result) => {
-      const translatedRents = result.data.map(item => ({
-        ...item,
-        status: this.getText(item.status),
-      }));
-      console.log(translatedRents);
-      this.rents = translatedRents;
-    })
-    .finally(() => {
-      this.loading = false;
-    });
-},
+      this.loading = true;
+      Rental.findAllOutstandingRentals()
+        .then((result) => {
+          const rentals = result.data;
+          this.rents = rentals.map((item) => {
+            return {
+              ...item,
+              status: this.getText(item.status),
+              rentaldate: this.formatDate(item.rentaldate),
+              previsiondate: this.formatDate(item.previsiondate),
+              returndate: item.returndate ? this.formatDate(item.returndate) : null,
+            };
+          });
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
 
-getText(status) {
-  const statusMap = {
-    PENDENT: "Pendente",
-    LATE_TIME: "Entregue com Atraso",
-    ON_TIME: "Entregue no Prazo",
-  };
+    getText(status) {
+      const statusMap = {
+        PENDENT: "Pendente",
+        LATE_TIME: "Entregue com Atraso",
+        ON_TIME: "Entregue no Prazo",
+      };
 
-  return statusMap[status] || status;
-},
+      return statusMap[status] || status;
+    },
 
     getAvailableBooks() {
       Rental.findAllBooksAvailable().then((result) => {
@@ -297,18 +291,19 @@ getText(status) {
             this.AlertAdd();
             this.close();
             this.getRents();
-            this.resetValidation();
             this.editedItem.user.id = null;
             this.editedItem.book.id = null;
+            this.getAvailableBooks();
           })
           .catch((error) => {
             this.AlertError(error.response.data.errors[0]);
           });
+        this.resetValidation();
       } else {
         Toast.fire({
           icon: "error",
           title: "Erro",
-          text: "não foi possivel adicionar editora pois existe campos nulos",
+          text: "Não foi possivel adicionar editora pois existe campos nulos!",
         });
       }
     },
@@ -340,7 +335,7 @@ getText(status) {
           this.AlertDelete();
         })
         .catch((error) => {
-          this.AlertError(error.response.data.detail);
+          this.AlertError(error.response.data.errors[0]);
         });
     },
 
@@ -378,7 +373,6 @@ getText(status) {
         console.log(rentalid);
         this.getRents();
       });
-
       console.log(rentalid);
     },
 
@@ -386,7 +380,7 @@ getText(status) {
       Toast.fire({
         icon: "success",
         title: "Sucesso!",
-        text: "Editora foi Adicionada com sucesso!",
+        text: "Aluguel foi adicionado com sucesso!",
       });
     },
     AlertError(error) {
@@ -412,33 +406,14 @@ getText(status) {
         this.editedIndex = -1;
       });
     },
+
+    parseDateISO(date) {
+      const [dd, mm, yyyy] = date.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    },
+
     resetValidation() {
       this.$refs.form.resetValidation();
-    },
-    filterDate(dateString, search) {
-      if (!dateString) {
-        return false;
-      }
-
-      const date = new Date(dateString);
-      date.setDate(date.getDate() + 1);
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = String(date.getFullYear());
-
-      const filteredDate = `${day}/${month}/${year}`;
-      return filteredDate.includes(search);
-    },
-    formatDate: function (value) {
-      if (value) {
-        const date = new Date(value);
-        date.setDate(date.getDate() + 1);
-        const day = String(date.getDate()).padStart(2, "0");
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-      return "";
     },
   },
 };

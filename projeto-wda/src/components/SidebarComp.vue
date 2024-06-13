@@ -33,11 +33,11 @@ export default {
 
     selectedItem: 0,
     items: [
-      { url:'/',text: 'DashBoard', icon: 'mdi-home' },
-      { url:'/Users',text: 'Usuario', icon: 'mdi-account-circle' },
-      { url:'/Books',text: 'Livros', icon: 'mdi-notebook-outline' },
-      { url:'/Publishers',text: 'Editoras', icon: 'mdi-bookshelf' },
-      { url:'/OutstandingRentals',text: 'Alugueis', icon: 'mdi-format-list-checkbox' }
+      { url:'/', text: 'DashBoard', icon: 'mdi-home' },
+      { url:'/Publishers', text: 'Editoras', icon: 'mdi-bookshelf' },
+      { url:'/Books', text: 'Livros', icon: 'mdi-notebook-outline' },
+      { url:'/Users', text: 'Usuario', icon: 'mdi-account-circle' },
+      { url:'/Rentals', text: 'Alugueis', icon: 'mdi-format-list-checkbox' }
     ],
   }),
 

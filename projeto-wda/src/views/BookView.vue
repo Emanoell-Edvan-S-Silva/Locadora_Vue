@@ -39,7 +39,7 @@
                             <v-text-field append-icon="mdi-clock-time-eight-outline" :rules="launchRules" v-model="editedItem.launch" label="Lançamento"></v-text-field>
                           </v-col>
                           <v-col cols="12" sm="6">
-                            <v-text-field append-icon="mdi-bookshelf" v-model="editedItem.amount" label="Estoque"></v-text-field>
+                            <v-text-field append-icon="mdi-bookshelf" :rules="amountRules" v-model="editedItem.amount" label="Estoque"></v-text-field>
                           </v-col>
                         </v-row>
                       </v-form>
@@ -59,7 +59,7 @@
           </v-col>
         </v-toolbar>
       </template>
-      <v-data-table :headers="headers" :items="books" :search="search" sort-by="id" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
+      <v-data-table :headers="headers" :items="books" :search="search" sort-by="name" class="pa-3 ma-5 elevation-3" :loading="loading" loading-text="Carregando..." :header-props="{ 'sort-by-text': 'Ordenar por: ' }" :footer-props="{ 'items-per-page-text': 'Itens por página' }">
         <template slot="item.actions" slot-scope="{ item }">
           <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -114,7 +114,7 @@ export default {
       { text: "Editora", value: "publisher.name" },
       { text: "Lançamento", value: "launch" },
       { text: "Estoque", value: "amount" },
-      { text: "Alugados", value: "total_leased" },
+      { text: "Aluguéis Ativos", value: "active_rentals" },
       { text: "Ações", value: "actions", sortable: false },
     ],
     books: [],
@@ -131,7 +131,7 @@ export default {
         id: 0,
         name: "",
       },
-      total_leased: 0,
+      active_rentals: 0,
     },
     defaultItem: {
       amount: 0,
@@ -143,7 +143,7 @@ export default {
         id: 0,
         name: "",
       },
-      total_leased: 0,
+      active_rentals: 0,
     },
     createItem: {
       amount: 0,
@@ -164,7 +164,8 @@ export default {
 
     nameRules: [(v) => !!v || "Nome é obrigatório"],
     authorRules: [(v) => !!v || "E-mail é obrigatório"],
-    launchRules: [(v) => !!v || "Cidade é obrigatório"],
+    launchRules: [(v) => !!v || "Lançamento é obrigatório"],
+    amountRules: [(v) => !!v || "Estoque é obrigatório"],
   }),
 
   computed: {
@@ -220,7 +221,6 @@ export default {
           Books.createNewBook(this.createItem)
             .then(() => {
               this.AlertAdd();
-              this.resetValidation();
               this.getbooks();
               this.close();
               this.resetValidation();
@@ -242,6 +242,7 @@ export default {
               this.getbooks();
               this.resetValidation();
               this.close();
+              
             })
             .catch((error) => {
               this.AlertError(error.response.data.errors[0]);
@@ -316,8 +317,17 @@ export default {
       this.resetValidation();
       this.dialog = false;
       this.$nextTick(() => {
-        this.editedItem = this.defaultItem;
-        this.editedItem.publisher.id = 0;
+        this.editedItem.publisher.id = null;
+        this.editedItem.name = "";
+        this.editedItem.author = "";
+        this.editedItem.launch = 0;
+        this.editedItem.amount = 0;
+
+        this.createItem.publisherId = null;
+        this.createItem.name = "";
+        this.createItem.author = "";
+        this.createItem.launch = 0;
+        this.createItem.amount = 0;
         this.editedIndex = -1;
       });
       console.log(this.editedItem);
